@@ -1,3 +1,5 @@
+import Lottie
+
 @objc(ReactNativeLottieBuilder)
 class ReactNativeLottieBuilder: NSObject {
 

@@ -17,6 +17,41 @@ const ReactNativeLottieBuilder = NativeModules.ReactNativeLottieBuilder
       }
     );
 
-export function multiply(a: number, b: number): Promise<number> {
-  return ReactNativeLottieBuilder.multiply(a, b);
+export function setColor(
+  tag: number,
+  keyPath: string,
+  red: number,
+  green: number,
+  blue: number,
+  alpha: number
+): void {
+  ReactNativeLottieBuilder.setColor(tag, keyPath, red, green, blue, alpha);
+}
+
+export function setFloat(tag: number, keyPath: string, value: number): void {
+  ReactNativeLottieBuilder.setFloat(tag, keyPath, value);
+}
+
+export function setPoint(
+  tag: number,
+  keyPath: string,
+  x: number,
+  y: number
+): void {
+  ReactNativeLottieBuilder.setPoint(tag, keyPath, x, y);
+}
+
+export function setSize(
+  tag: number,
+  keyPath: string,
+  width: number,
+  height: number
+): void {
+  ReactNativeLottieBuilder.setSize(tag, keyPath, width, height);
+}
+
+export function getCompositionSize(
+  tag: number
+): Promise<{ width: number; height: number }> {
+  return ReactNativeLottieBuilder.getCompositionSize(tag);
 }

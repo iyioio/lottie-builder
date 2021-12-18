@@ -12,7 +12,7 @@ RCT_EXTERN_METHOD(setColor:(NSNumber * _Nonnull)tag
 
 RCT_EXTERN_METHOD(setFloat:(NSNumber * _Nonnull)tag
                   withKeypath:(NSString * _Nonnull)keypath
-                  andFloat:(double)f);
+                  andValue:(double)value);
 
 RCT_EXTERN_METHOD(setPoint:(NSNumber * _Nonnull)tag
                   withKeypath:(NSString * _Nonnull)keypath
@@ -26,6 +26,6 @@ RCT_EXTERN_METHOD(setSize:(NSNumber * _Nonnull)tag
 
 RCT_EXTERN_METHOD(getCompositionSize:(NSNumber * _Nonnull)tag
                   withResolver:(RCTPromiseResolveBlock)resolve
-                  andRejecter:(RCTPromiseRejectBlock)reject);
+                  withRejecter:(RCTPromiseRejectBlock)reject);
 
 @end

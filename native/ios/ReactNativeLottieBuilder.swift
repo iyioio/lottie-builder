@@ -4,78 +4,88 @@ import Lottie
 @objc(ReactNativeLottieBuilder)
 class ReactNativeLottieBuilder: NSObject {
 
-    var bridge: RCTBridge!
+    @objc var bridge: RCTBridge!
 
     @objc(setColor:withKeypath:red:green:blue:andAlpha:)
     func setColor(_ tag:NSNumber, keypath: String, r:CGFloat, g:CGFloat, b:CGFloat, a:CGFloat)->Void
     {
+        DispatchQueue.main.async {
 
-      guard let anView = findAnimationView(tag) else {
-        return
-      }
+            guard let anView = self.findAnimationView(tag) else {
+                return
+            }
 
-      let fillKeypath = AnimationKeypath(keypath: keypath)
+            let fillKeypath = AnimationKeypath(keypath: keypath)
 
-      let provider = ColorValueProvider(Color(r:r,g:g,b:b,a:a))
+            let provider = ColorValueProvider(Color(r:r,g:g,b:b,a:a))
 
-      anView.setValueProvider(provider, keypath: fillKeypath)
+            anView.setValueProvider(provider, keypath: fillKeypath)
+        }
     }
 
     @objc(setFloat:withKeypath:andValue:)
     func setFloat(_ tag:NSNumber, keypath: String, value:CGFloat)->Void
     {
+        DispatchQueue.main.async {
 
-      guard let anView = findAnimationView(tag) else {
-        return
-      }
+            guard let anView = self.findAnimationView(tag) else {
+                return
+            }
 
-      let fillKeypath = AnimationKeypath(keypath: keypath)
+            let fillKeypath = AnimationKeypath(keypath: keypath)
 
-      let provider = FloatValueProvider(value)
+            let provider = FloatValueProvider(value)
 
-      anView.setValueProvider(provider, keypath: fillKeypath)
+            anView.setValueProvider(provider, keypath: fillKeypath)
+        }
     }
 
     @objc(setPoint:withKeypath:x:andY:)
     func setPoint(_ tag:NSNumber, keypath: String, x:CGFloat, y:CGFloat)->Void
     {
+        DispatchQueue.main.async {
 
-      guard let anView = findAnimationView(tag) else {
-        return
-      }
+            guard let anView = self.findAnimationView(tag) else {
+                return
+            }
 
-      let fillKeypath = AnimationKeypath(keypath: keypath)
+            let fillKeypath = AnimationKeypath(keypath: keypath)
 
-      let provider = PointValueProvider(CGPoint(x:x,y:y))
+            let provider = PointValueProvider(CGPoint(x:x,y:y))
 
-      anView.setValueProvider(provider, keypath: fillKeypath)
+            anView.setValueProvider(provider, keypath: fillKeypath)
+        }
     }
 
     @objc(setSize:withKeypath:width:andHeight:)
     func setSize(_ tag:NSNumber, keypath: String, w:CGFloat, h:CGFloat)->Void
     {
+        DispatchQueue.main.async {
 
-      guard let anView = findAnimationView(tag) else {
-        return
-      }
+            guard let anView = self.findAnimationView(tag) else {
+                return
+            }
 
-      let fillKeypath = AnimationKeypath(keypath: keypath)
+            let fillKeypath = AnimationKeypath(keypath: keypath)
 
-      let provider = SizeValueProvider(CGSize(width:w,height:h))
+            let provider = SizeValueProvider(CGSize(width:w,height:h))
 
-      anView.setValueProvider(provider, keypath: fillKeypath)
+            anView.setValueProvider(provider, keypath: fillKeypath)
+        }
     }
 
-    @objc(getCompositionSize:withReslover:andRejector:)
-    func getCompositionSize(_ tag:NSNumber, resolve:RCTPromiseResolveBlock, reject:RCTPromiseRejectBlock)->Void
+    @objc(getCompositionSize:withResolver:withRejecter:)
+    func getCompositionSize(_ tag:NSNumber, resolve:@escaping RCTPromiseResolveBlock,  reject:@escaping RCTPromiseRejectBlock)->Void
     {
+        DispatchQueue.main.async {
+            
+            guard let size = self.findAnimationView(tag)?.animation?.size else {
+                reject("1","AnimationView not found",nil)
+            return
+            }
 
-      guard let size = findAnimationView(tag)?.animation?.size else {
-        reject("1","AnimationView not found",nil)
-        return
-      }
-
-      resolve(["width":size.width,"height":size.height])
+            resolve(["width":size.width,"height":size.height])
+        }
     }
 
     private func findAnimationView(_ tag:NSNumber)->AnimationView?

@@ -50,7 +50,7 @@ export function setSize(
   ReactNativeLottieBuilder.setSize(tag, keyPath, width, height);
 }
 
-export function getCompositionSize(
+export function getCompositionSizeAsync(
   tag: number
 ): Promise<{ width: number; height: number }> {
   return ReactNativeLottieBuilder.getCompositionSize(tag);

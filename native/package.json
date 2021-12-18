@@ -143,5 +143,8 @@
         }
       ]
     ]
+  },
+  "dependencies": {
+    "lottie-ios": "^3.2.3"
   }
 }

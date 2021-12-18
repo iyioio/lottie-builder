@@ -20,7 +20,9 @@ PODS:
     - glog
   - glog (0.3.5)
   - iyio-react-native-lottie-builder (0.1.0):
+    - lottie-ios
     - React-Core
+  - lottie-ios (3.2.3)
   - RCTRequired (0.63.4)
   - RCTTypeSafety (0.63.4):
     - FBLazyVector (= 0.63.4)
@@ -283,6 +285,7 @@ DEPENDENCIES:
 SPEC REPOS:
   trunk:
     - boost-for-react-native
+    - lottie-ios
 
 EXTERNAL SOURCES:
   DoubleConversion:
@@ -347,7 +350,8 @@ SPEC CHECKSUMS:
   FBReactNativeSpec: f2c97f2529dd79c083355182cc158c9f98f4bd6e
   Folly: b73c3869541e86821df3c387eb0af5f65addfab4
   glog: 40a13f7840415b9a77023fbcae0f1e6f43192af3
-  iyio-react-native-lottie-builder: e6893d2f11ac5d6ef32c076e3281a856cc2ddc25
+  iyio-react-native-lottie-builder: 09edfd8182cade9f41b36a422771355001c63fb8
+  lottie-ios: c058aeafa76daa4cf64d773554bccc8385d0150e
   RCTRequired: 082f10cd3f905d6c124597fd1c14f6f2655ff65e
   RCTTypeSafety: 8c9c544ecbf20337d069e4ae7fd9a377aadf504b
   React: b0a957a2c44da4113b0c4c9853d8387f8e64e615

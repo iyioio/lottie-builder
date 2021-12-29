@@ -165,7 +165,7 @@ export default function App() {
     },[an,viewportSize,compSize,resizeMode,selectedLayer,selectOffset]);
 
     // Set the color of selected layer
-    const setCircleColor=useCallback((color:string)=>{
+    const setSelectedColor=useCallback((color:string)=>{
         if(!an || !selectedLayer){
             return;
         }
@@ -174,11 +174,19 @@ export default function App() {
 
 
     // Rotate selected layer by 5 deg
-    const rotateRect=useCallback(()=>{
+    const rotateSelected=useCallback(()=>{
         if(!selectedLayer){
             return;
         }
         selectedLayer.setRotation(selectedLayer.getRotation()+5);
+    },[selectedLayer]);
+
+    // Removes the selected layer from the animation
+    const removeSelected=useCallback(()=>{
+        if(!selectedLayer){
+            return;
+        }
+        selectedLayer.remove();
     },[selectedLayer]);
 
 
@@ -247,14 +255,16 @@ export default function App() {
             <View style={styles.infoCol}>
                 <Text>Composition:{compSize.width}x{compSize.height}</Text>
                 <Text>Viewport:{viewportSize.width}x{viewportSize.height}</Text>
+                <Text>Assets:{an?.assets.length}, Layers:{an?.layers.length}</Text>
                 <Text>Selected:{selectedLayer?.name||'(none)'}</Text>
             </View>
 
             <View style={styles.row}>
-                <Button title="Red" onPress={()=>setCircleColor('#f00')}/>
-                <Button title="Green" onPress={()=>setCircleColor('#0f0')}/>
-                <Button title="Trans Blue" onPress={()=>setCircleColor('#0000ff88')}/>
-                <Button title="Rotate" onPress={rotateRect}/>
+                <Button title="Red" onPress={()=>setSelectedColor('#f00')}/>
+                <Button title="Green" onPress={()=>setSelectedColor('#0f0')}/>
+                <Button title="Blue" onPress={()=>setSelectedColor('#0000ff88')}/>
+                <Button title="Rotate" onPress={rotateSelected}/>
+                <Button title="Remove" onPress={removeSelected}/>
             </View>
 
             <View style={styles.row}>

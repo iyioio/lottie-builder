@@ -141,7 +141,7 @@ export class Layer extends Node{
         super(source,propMap,revPropMap);
         this.an=an;
     }
-    
+
     private getTransform():any
     {
         let trans=this.transform;
@@ -175,6 +175,14 @@ export class Layer extends Node{
         }
 
         return trans;
+    }
+
+    /**
+     * Removes the layer from it's parent animation
+     */
+    public remove()
+    {
+        this.an.removeLayer(this);
     }
 
     public setScale(scale:number)

@@ -7,7 +7,7 @@ import { createLayer, Layer, LayerPropMap } from "./Layer";
 import { Marker } from "./Marker";
 import { Meta } from "./Meta";
 import { Node } from './Node';
-import { cloneObj, deepCompare, KeyComparer } from "./util";
+import { aryRemoveItem, cloneObj, deepCompare, KeyComparer } from "./util";
 
 export const AnimationPropMap={
     frameRate:{name:'fr'},
@@ -67,17 +67,20 @@ export class Animation extends Node
     public set version(value:string|undefined){this.setValue(AnimationPropMap.version,value)}
 
     private layerLookup:{[name:string]:Layer}={}
-    public readonly layers:Layer[]|undefined;
+    public readonly layers:Layer[];
 
     public readonly markers:Marker[]|undefined;
 
     private assetLookup:{[name:string]:Asset}={}
-    public readonly assets:Asset[]|undefined;
+    public readonly assets:Asset[];
 
     public readonly meta:Meta|undefined;
 
     private readonly onSourceChangeSrc:EventSource=createEvent();
     public get onSourceChange(){return this.onSourceChangeSrc.evt}
+
+    private get sourceLayers():SourceObject[]{return this.source.layers}
+    private get sourceAssets():SourceObject[]{return this.source.assets}
 
     public constructor(
         source:SourceObject,
@@ -85,14 +88,22 @@ export class Animation extends Node
         cloneSource:boolean=true)
     {
         super(
-            cloneSource?cloneObj(source):source,
+            cloneSource?source=cloneObj(source):source,
             AnimationPropMap,
             AnimationRevPropMap);
 
+        if(!source.layers){
+            source.layers=[];
+        }
+
+        if(!source.assets){
+            source.assets=[];
+        }
+
         this.accelerator=accelerator;
-        this.layers=this.mapProp(AnimationPropMap.layers,s=>createLayer(this,s));
+        this.layers=this.mapProp(AnimationPropMap.layers,s=>createLayer(this,s))||[];
         this.markers=this.mapProp(AnimationPropMap.markers,s=>new Marker(s));
-        this.assets=this.mapProp(AnimationPropMap.assets,s=>new Asset(s));
+        this.assets=this.mapProp(AnimationPropMap.assets,s=>new Asset(s))||[];
         this.meta=this.mapProp(AnimationPropMap.meta,s=>new Meta(s))?.[0];
 
         this.updateLayerLookup();
@@ -281,6 +292,89 @@ export class Animation extends Node
         if(triggerSourceChange){
             this.swapSource();
         }
+    }
+
+
+
+    private getAssetLayerRefCount(layers:SourceObject[], id:string):number
+    {
+        let count=0;
+
+        for(const l of layers){
+            if(l.refId===id){
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private getAssetRefCount(id:string):number
+    {
+        let count=this.getAssetLayerRefCount(this.sourceLayers,id);
+
+        for(const a of this.sourceAssets){
+            if(a.layers){
+                count+=this.getAssetLayerRefCount(a.layers,id);
+            }
+        }
+
+        return count;
+    }
+
+    public removeLayer(layer:Layer, triggerSourceChange=true):boolean
+    {
+        const layerSource=layer.getSource();
+        if(!aryRemoveItem(this.sourceLayers,layerSource)){
+            return false;
+        }
+
+        aryRemoveItem(this.layers,layer);
+
+        if(layerSource.refId){
+            const count=this.getAssetRefCount(layerSource.refId);
+            if(!count){
+                this.removeAsset(layerSource.refId,false);
+            }
+        }
+
+        this.updateLayerLookup();
+
+        if(triggerSourceChange){
+            this.swapSource();
+        }
+
+        return true;
+    }
+
+    public removeAsset(id:string, triggerSourceChange=true):boolean
+    {
+
+        if(!this.assetLookup[id]){
+            return false;
+        }
+
+        const src=this.sourceAssets.find(a=>a.id===id);
+        const asset=this.assets.find(a=>a.id===id);
+
+        aryRemoveItem(this.sourceAssets,src);
+        aryRemoveItem(this.assets,asset);
+
+        if(src?.layers){
+            for(const l of src.layers){
+                if(l.refId && this.getAssetRefCount(l.refId)===0){
+                    this.removeAsset(l.refId,false);
+                }
+            }
+        }
+
+        this.updateAssetLookup();
+
+        if(triggerSourceChange){
+            this.swapSource();
+        }
+
+        return true;
     }
 
     public addPrecomposition(

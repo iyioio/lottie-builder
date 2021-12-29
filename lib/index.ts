@@ -1,6 +1,7 @@
 export * from './Accelerator';
 export * from './Animation';
 export * from './Asset';
+export * from './Event';
 export * from './Layer';
 export * from './Marker';
 export * from './Meta';

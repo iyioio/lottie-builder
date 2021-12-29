@@ -5,7 +5,7 @@ export class Node
     private readonly propMap:PropertyMap;
     private readonly revPropMap:PropertyMap;
 
-    private readonly source:SourceObject;
+    protected source:SourceObject;
 
     public readonly isNode=IsNode;
 
@@ -29,6 +29,17 @@ export class Node
         this.propMap=propMap;
         this.revPropMap=revPropMap;
         this.source=source;
+    }
+
+    protected swapSource()
+    {
+        const currentSource=this.source;
+        const newSource:any={}
+        for(const e in currentSource){
+            newSource[e]=currentSource[e];
+        }
+        this.source=newSource;
+        return currentSource;
     }
 
     public getSource(){

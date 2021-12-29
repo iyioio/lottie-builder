@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Animated, Button, GestureResponderEvent, StyleSheet, Text, View } from "react-native";
 import { LottieBuilderAccelerator } from "@iyio/react-native-lottie-builder";
-import { Animation, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
+import { Animation, AnimationObject, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
 import LottieView from "lottie-react-native";
 import KeepAwake from 'react-native-keep-awake';
 import * as fs from 'react-native-fs';
@@ -9,6 +9,9 @@ import { useRef } from "react";
 
 // test-af-lottie.aep exported using the Bodymovin extension
 const testLottie = () => require("./test-af-lottie.json");
+const hatLottie = () => require("./hat.json");
+const squreLottie = () => require("./sq.json");
+const multiLottie = () => require("./multi.json");
 
 export default function App() {
 
@@ -25,6 +28,7 @@ export default function App() {
     const [view, setView] = useState<View | null>(null);
 
     const [an,setAn]=useState<Animation|null>(null);
+    const [src,setSrc]=useState<AnimationObject|null>(null);
 
     // Loads the test-af-lottie.json file
     const loadTestLottie=useCallback(()=>{
@@ -37,6 +41,16 @@ export default function App() {
     useEffect(() =>{
         loadTestLottie()
     },[loadTestLottie]);
+
+    useEffect(()=>{
+        if(!an){
+            return;
+        }
+        setSrc(an.getAnimationObject());
+        return an.onSourceChange.addListener(()=>{
+            setSrc(an.getAnimationObject());
+        })
+    },[an])
 
     const [selectOffset,setSelectOffset]=useState<Point|null>(null);
     const [selectedLayer,setSelectedLayer]=useState<Layer|null>(null);
@@ -170,7 +184,7 @@ export default function App() {
 
     // Prints the lottie animation to the console with readable property names
     const printAnimation=useCallback(()=>{
-        console.log(JSON.stringify(an,null,4).substr(0,10000))
+        console.info(JSON.stringify(an,null,4).substr(0,10000))
     },[an]);
 
     // Saves the current state of the lottie animation to file
@@ -187,6 +201,21 @@ export default function App() {
         const json=await fs.readFile(`${fs.DocumentDirectoryPath}/animation.json`);
         setAn(new Animation(JSON.parse(json),new LottieBuilderAccelerator(view)));
     },[view]);
+
+    // Adds a hat to the animation
+    const addHat=useCallback(()=>{
+        an?.addPrecomposition(hatLottie(),'hat','hat',100,100);
+    },[an]);
+
+    // Adds a square to the animation
+    const addSquare=useCallback(()=>{
+        an?.addPrecomposition(squreLottie(),'sq','sq',100,100);
+    },[an]);
+
+    // Adds a square to the animation
+    const addMulti=useCallback(()=>{
+        an?.addPrecomposition(multiLottie(),'multi','multi');
+    },[an]);
 
 
 
@@ -207,8 +236,8 @@ export default function App() {
                     onTouchMove={moveLayer}
                     onTouchStart={selectLayer}
                 >
-                    {an&&<LottieView
-                        source={an.getAnimationObject()}
+                    {src&&<LottieView
+                        source={src}
                         progress={anValue.current}
                         resizeMode={resizeMode}
                         imageAssetsFolder="images"/>}
@@ -240,6 +269,13 @@ export default function App() {
                 <Button title="fill" onPress={()=>setAspectRatio('fill')}/>
                 <Button title="2:1" onPress={()=>setAspectRatio('2:1')}/>
                 <Button title="1:2" onPress={()=>setAspectRatio('1:2')}/>
+            </View>
+
+            <View style={styles.row}>
+                <Text>Add</Text>
+                <Button title="hat" onPress={addHat}/>
+                <Button title="square" onPress={addSquare}/>
+                <Button title="multi" onPress={addMulti}/>
             </View>
 
             <View style={styles.row}>

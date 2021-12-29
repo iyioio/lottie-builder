@@ -51,6 +51,7 @@ export const LayerPropMap={
     height:{name:'h'},
     id:{name:'ln'},
     index:{name:'ind'},
+    refId:{name:'refId'},
     inPoint:{name:'ip'},
     is3D:{name:'ddd'},
     name:{name:'nm'},
@@ -267,7 +268,6 @@ export class GroupLayer extends Layer{
 }
 
 export const ImageLayerPropMap={
-    refId:{name:'refId'},
     ...LayerPropMap
 }
 export const ImageLayerRevPropMap=createRevPropMap(ImageLayerPropMap);
@@ -285,7 +285,6 @@ export class ImageLayer extends Layer{
 }
 
 export const PrecompositionLayerPropMap={
-    refId:{name:'refId'},
     timeRemap:{name:'timeRemap'},
     ...LayerPropMap
 }

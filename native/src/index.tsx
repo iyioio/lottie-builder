@@ -1,8 +1,12 @@
-import { NativeModules, Platform } from 'react-native';
+import { findNodeHandle, NativeModules, Platform, View } from 'react-native';
+import type { Size, Accelerator } from '@iyio/lottie-builder';
 
-export type Size={ width: number; height: number }
+let logNativeCalls=false;
 
-export type ResizeMode = "cover" | "contain" | "center";
+export function setLogNativeCalls(enabled:boolean)
+{
+    logNativeCalls=enabled;
+}
 
 const LINKING_ERROR =
   `The package '@iyio/react-native-lottie-builder' doesn't seem to be linked. Make sure: \n\n` +
@@ -39,10 +43,18 @@ export function setColor(
   blue: number,
   alpha: number
 ): void {
+    if(logNativeCalls){
+        console.debug('setColor',{tag, keyPath, red, green, blue, alpha})
+    }
+    assertNumbers(tag,red,green,blue,alpha)
     ReactNativeLottieBuilder.setColor(tag, keyPath, red, green, blue, alpha);
 }
 
 export function setFloat(tag: number, keyPath: string, value: number): void {
+    if(logNativeCalls){
+        console.debug('setFloat',{tag, keyPath, value})
+    }
+    assertNumbers(tag,value)
     ReactNativeLottieBuilder.setFloat(tag, keyPath, value);
 }
 
@@ -59,6 +71,10 @@ export function setPoint(
   x: number,
   y: number
 ): void {
+    if(logNativeCalls){
+        console.debug('setPoint',{tag, keyPath, x, y})
+    }
+    assertNumbers(tag,x,y)
     ReactNativeLottieBuilder.setPoint(tag, keyPath, x, y);
 }
 
@@ -75,6 +91,10 @@ export function setSize(
   width: number,
   height: number
 ): void {
+    if(logNativeCalls){
+        console.debug('setSize',{tag, keyPath, width, height})
+    }
+    assertNumbers(tag,width,height)
     ReactNativeLottieBuilder.setSize(tag, keyPath, width, height);
 }
 
@@ -85,7 +105,10 @@ export function setSize(
  */
 export async function getCompositionSizeAsync(
   tag: number
-): Promise<{ width: number; height: number }> {
+): Promise<Size> {
+    if(logNativeCalls){
+        console.debug('getCompositionSize',{tag})
+    }
     let attempt=1;
     while(true){
         try{
@@ -100,18 +123,44 @@ export async function getCompositionSizeAsync(
     }
 }
 
-function delayAsync(delayMs:number):Promise<void>
+/**
+ * Returns the layer at the given point. Hit testing is performed based on the alpha value of the
+ * pixel at the given point
+ * @param tag React native tag of a LottieView or a view that contains a LottieView
+ * @param x X position
+ * @param y Y position
+ */
+export async function getLayerIndexAtPtAsync(tag:number,x:number,y:number):Promise<number>
 {
-    delayMs=Math.round(delayMs);
-    return new Promise((r)=>{
-        if(delayMs<=0){
-            r();
-        }else{
-            setTimeout(()=>{
-                r();
-            },delayMs);
-        }
-    });
+    if(logNativeCalls){
+        console.debug('getLayerIndexAtPt',{tag,x,y})
+    }
+    assertNumbers(tag,x,y)
+    const r=await ReactNativeLottieBuilder.getLayerIndexAtPt(tag,x,y);
+    return r?r.index:-1;
+}
+
+/**
+ * Turn highlighting on or off for a layer
+ * @param tag React native tag of a LottieView or a view that contains a LottieView
+ * @param layerIndex index of the layer
+ * @param enabled controls if highlighting is turned on or off. 1 = on, 0 = off
+ */
+export function setLayerHighlight(
+    tag:number,
+    layerIndex:number,
+    enabled:number,
+    red: number,
+    green: number,
+    blue: number,
+    alpha: number,
+    weight: number)
+{
+    if(logNativeCalls){
+        console.debug('setLayerHighlight',{tag,layerIndex,enabled,red,green,blue,alpha,weight})
+    }
+    assertNumbers(tag,layerIndex)
+    ReactNativeLottieBuilder.setLayerHighlight(tag,layerIndex,enabled,red,green,blue,alpha,weight);
 }
 
 /**
@@ -119,80 +168,62 @@ function delayAsync(delayMs:number):Promise<void>
  * regenerates the full AnimationView of a LottieView for every property change which is very bad
  * for transforming objects in real time.
  */
-export class LottieBuilderAccelerator{
+export class LottieBuilderAccelerator implements Accelerator{
 
-    public setColor(tag: number, keyPath: string, color: string) {
+    private readonly tag:number;
+
+    public constructor(elemOrTag:View|{current:any}|number)
+    {
+        if(typeof elemOrTag === 'number'){
+            this.tag=elemOrTag;
+        }else{
+            if(!elemOrTag){
+                throw new Error('elemOrTag should either be a View reference')
+            }
+            const et:any=elemOrTag;
+            const t=findNodeHandle(et.current?et.current:et);
+            if(t===null){
+                throw new Error('elemOrTag should either be a View reference')
+            }
+            this.tag=t;
+        }
+    }
+
+    public setColor(keyPath: string, color: string) {
         const ary=convertToNativeColor(color);
-        setColor(tag, keyPath, ary[0], ary[1], ary[2], ary[3]);
+        setColor(this.tag,keyPath, ary[0], ary[1], ary[2], ary[3]);
     }
 
-    public setFloat(tag: number, keyPath: string, value: number) {
-        setFloat(tag, keyPath, value);
+    public setFloat( keyPath: string, value: number) {
+        setFloat(this.tag,keyPath, value);
     }
 
-    public setPoint(tag: number, keyPath: string, x: number, y: number) {
-        setPoint(tag, keyPath, x, y);
+    public setPoint( keyPath: string, x: number, y: number) {
+        setPoint(this.tag,keyPath, x, y);
     }
 
-    public setSize(tag: number,keyPath: string,width: number,height: number) {
-        setSize(tag, keyPath, width, height);
+    public setSize(keyPath: string,width: number,height: number) {
+        setSize(this.tag,keyPath, width, height);
     }
 
-    public getCompositionSizeAsync(tag: number): Promise<Size> {
-        return getCompositionSizeAsync(tag);
-    }
-}
-
-
-
-/**
- * Converts a point from the coordinate system of a viewport or view to the coordinate
- * system of a composition. This function assumes the a resizeMode of contain is being used.
- * @param x Viewport x
- * @param y Viewport y
- * @param viewPortSize Size of the viewport/View
- * @param compSize Size of the target composition
- * @param resizeMode
- * @returns The converted point
- */
-export function viewportPointToCompPoint(x:number,y:number,viewPortSize:Size,compSize:Size,resizeMode:ResizeMode):{x:number,y:number}
-{
-    var vAr=viewPortSize.width/viewPortSize.height;
-    var cAr=compSize.width/compSize.height;
-
-    switch(resizeMode){
-
-        case 'contain':
-            if(vAr<cAr){//viewport is taller than composition
-                const scale=compSize.width/viewPortSize.width;
-                x*=scale;
-                y=y*scale-(viewPortSize.height*scale-compSize.height)/2;
-            }else{
-                const scale=compSize.height/viewPortSize.height;
-                y*=scale;
-                x=x*scale-(viewPortSize.width*scale-compSize.width)/2;
-            }
-            break;
-
-        case 'cover':
-            if(vAr<cAr){//viewport is taller than composition
-                const scale=compSize.height/viewPortSize.height;
-                y*=scale;
-                x=x*scale-(viewPortSize.width*scale-compSize.width)/2;
-            }else{
-                const scale=compSize.width/viewPortSize.width;
-                x*=scale;
-                y=y*scale-(viewPortSize.height*scale-compSize.height)/2;
-            }
-            break;
-
-        case 'center':
-            x+=(compSize.width-viewPortSize.width)/2;
-            y+=(compSize.height-viewPortSize.height)/2;
-            break;
+    public getCompositionSizeAsync(): Promise<Size> {
+        return getCompositionSizeAsync(this.tag);
     }
 
-    return {x,y};
+    public getLayerIndexAtPtAsync(x:number,y:number):Promise<number>
+    {
+        return getLayerIndexAtPtAsync(this.tag,x,y);
+    }
+
+    public setLayerHighlight(
+        layerIndex:number,
+        enabled:boolean,
+        color: string,
+        weight: number)
+    {
+        const ary=convertToNativeColor(color);
+        return setLayerHighlight(this.tag,layerIndex,enabled?1:0,ary[0],ary[1],ary[2],ary[3],weight);
+    }
 }
 
 /**
@@ -252,4 +283,28 @@ export function convertToNativeColor(color:string):[number,number,number,number]
         Number('0x'+color.substr(4,2))/255,
         Number('0x'+color.substr(6,2))/255,
     ];
+}
+
+
+function delayAsync(delayMs:number):Promise<void>
+{
+    delayMs=Math.round(delayMs);
+    return new Promise((r)=>{
+        if(delayMs<=0){
+            r();
+        }else{
+            setTimeout(()=>{
+                r();
+            },delayMs);
+        }
+    });
+}
+
+function assertNumbers(...numbers:number[])
+{
+    for(const n of numbers){
+        if(isNaN(n)){
+            throw new Error('Value is NaN');
+        }
+    }
 }

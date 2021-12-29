@@ -2,7 +2,8 @@
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {
-      "@iyio/react-native-lottie-builder": ["./src/index"]
+      "@iyio/react-native-lottie-builder": ["./src/index"],
+      "@iyio/lottie-builder":["./node_modules/@iyio/lottie-builder/dist/index"]
     },
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,

@@ -1,0 +1,29 @@
+{
+  "name": "@iyio/lottie-builder",
+  "version": "0.0.2",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "watch": "tsc --watch",
+    "build": "tsc",
+    "build-publish": "npm run build && npm publish"
+  },
+  "keywords": [
+    "lottie"
+  ],
+  "author": "Scott Vance",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^17.0.0",
+    "nodemon": "^2.0.15",
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
+  },
+  "dependencies": {
+    "@lottiefiles/lottie-js": "^0.3.1"
+  }
+}

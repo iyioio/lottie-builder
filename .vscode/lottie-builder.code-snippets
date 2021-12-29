@@ -1,0 +1,59 @@
+{
+  "Wrapper Prop": {
+    "scope": "typescript",
+    "prefix": "wrap-prop",
+    "description": "Creates a lottie wrapper prop",
+    "body": [
+      "public get ${1:name}():${2:type}|undefined{return this.getValue(${3:${TM_FILENAME_BASE}}PropMap.${1:name})}",
+      "public set ${1:name}(value:${2:type}|undefined){this.setValue(${3:${TM_FILENAME_BASE}}PropMap.${1:name},value)}"
+    ]
+  },
+
+
+  "Wrapper Class": {
+    "scope": "typescript",
+    "prefix": "wrap-class",
+    "description": "Creates a lottie wrapper class",
+    "body": [
+      "export const ${1:className}PropMap={",
+      "}",
+      "export const ${1:className}RevPropMap=createRevPropMap(${1:className}PropMap);",
+      "",
+      "export class ${1:className} extends Node{",
+      "",
+      "    public constructor(source:SourceObject)",
+      "    {",
+      "        super(source,${1:className}PropMap,${1:className}RevPropMap);",
+      "    }",
+      "",
+      "}"
+    ]
+  },
+
+
+  "Base Wrapper Class": {
+    "scope": "typescript",
+    "prefix": "wrap-base-class",
+    "description": "Creates a base lottie wrapper class",
+    "body": [
+      "export const ${1:className}PropMap={",
+      "}",
+      "export const ${1:className}RevPropMap=createRevPropMap(${1:className}PropMap);",
+      "",
+      "export class ${1:className} extends Node{",
+      "",
+      "    public constructor(",
+      "        source:SourceObject,",
+      "        propMap:PropertyMap=${1:className}PropMap,",
+      "        revPropMap:PropertyMap=${1:className}RevPropMap)",
+      "    {",
+      "        super(source,propMap,revPropMap);",
+      "    }",
+      "",
+      "}"
+    ]
+  }
+
+
+
+}

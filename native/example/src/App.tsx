@@ -1,19 +1,45 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Button, findNodeHandle, GestureResponderEvent, StyleSheet, Text, View } from "react-native";
-import { setColor,setPoint, setSize, getCompositionSizeAsync, setFloat, convertToNativeColor, Size, viewportPointToCompPoint, ResizeMode } from "@iyio/react-native-lottie-builder";
+import React, { useCallback, useEffect, useState } from "react";
+import { Animated, Button, GestureResponderEvent, StyleSheet, Text, View } from "react-native";
+import { LottieBuilderAccelerator } from "@iyio/react-native-lottie-builder";
+import { Animation, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
 import LottieView from "lottie-react-native";
+import KeepAwake from 'react-native-keep-awake';
+import * as fs from 'react-native-fs';
+import { useRef } from "react";
 
 // test-af-lottie.aep exported using the Bodymovin extension
 const testLottie = () => require("./test-af-lottie.json");
 
-
 export default function App() {
 
-    const src = useMemo(() => testLottie(), []);
+    const anValue=useRef(new Animated.Value(0));
+    useEffect(()=>{
+        Animated.loop(Animated.timing(anValue.current,{
+            toValue:1,
+            duration:5000,
+            useNativeDriver:true
+        })).start()
+
+    },[])
 
     const [view, setView] = useState<View | null>(null);
 
-    const tag = useMemo(() => (view ? findNodeHandle(view) : null), [view]);
+    const [an,setAn]=useState<Animation|null>(null);
+
+    // Loads the test-af-lottie.json file
+    const loadTestLottie=useCallback(()=>{
+        if(!view){
+            return;
+        }
+        setAn(new Animation(testLottie(),new LottieBuilderAccelerator(view)));
+    },[view])
+
+    useEffect(() =>{
+        loadTestLottie()
+    },[loadTestLottie]);
+
+    const [selectOffset,setSelectOffset]=useState<Point|null>(null);
+    const [selectedLayer,setSelectedLayer]=useState<Layer|null>(null);
 
     const [viewportSize, setViewportSize] = useState<Size>({ width: 0, height: 0});
 
@@ -25,22 +51,23 @@ export default function App() {
 
     // Get the size of the loaded composition
     useEffect(()=>{
-        if(tag===null){
+        const ac=an?.accelerator;
+        if(!ac){
             return;
         }
         let m=true;
         (async ()=>{
-            const size=await getCompositionSizeAsync(tag);
+            const size=await ac?.getCompositionSizeAsync();
             if(m){
                 setCompSize(size);
             }
         })();
         return ()=>{m=false;};
-    },[tag]);
+    },[an]);
 
     // Shrink and grow MyStar using an interval
     useEffect(()=>{
-        if(!tag==null){
+        if(!an){
             return;
         }
         let m=true;
@@ -50,7 +77,7 @@ export default function App() {
         let dir=1;
         let scale=100;
         const iv=setInterval(()=>{
-            if(!m || tag===null){
+            if(!m){
                 return;
             }
 
@@ -63,11 +90,7 @@ export default function App() {
                 dir=-1;
             }
 
-            setSize(
-                tag,
-                "**.MyStar.Transform.Scale",
-                scale,
-                scale);
+            an.getLayer('MyStar')?.setScale(scale);
 
         },1000/30);
 
@@ -75,11 +98,45 @@ export default function App() {
             m=false;
             clearInterval(iv);
         };
-    },[tag]);
+    },[an]);
 
-    // Move MyStar under finger
-    const moveStar=(e:GestureResponderEvent)=>{
-        if (tag === null) {
+    // Selects the layer that is tapped on
+    const selectLayer=useCallback(async (e:GestureResponderEvent)=>{
+        if(!an){
+            return;
+        }
+
+        const pt=viewportPointToCompPoint(
+            e.nativeEvent.locationX,
+            e.nativeEvent.locationY,
+            viewportSize,
+            compSize,
+            resizeMode);
+
+        const layer=await an.getLayerAtPtAsync(pt.x,pt.y);
+        setSelectedLayer(current=>{
+            if(current){
+                current.setHighlighted(false);
+            }
+            return layer;
+        });
+        if(layer){
+            const pos=layer.getPosition();
+            setSelectOffset({
+                x:pt.x-pos.x,
+                y:pt.y-pos.y
+            });
+            layer.setHighlighted(true);
+        }else{
+            setSelectOffset(null);
+        }
+
+
+    },[an,viewportSize,compSize,resizeMode])
+
+    // Moves the selected layer
+    const moveLayer=useCallback((e:GestureResponderEvent)=>{
+        if (!selectedLayer || !selectOffset) {
             return;
         }
         const pt=viewportPointToCompPoint(
@@ -88,35 +145,54 @@ export default function App() {
             viewportSize,
             compSize,
             resizeMode);
-        setPoint(
-            tag,
-            "**.MyStar.Transform.Position",
-            pt.x,
-            pt.y
-        );
-    };
 
-    // Set the color of MyCircle
-    const setCircleColor=(color:string)=>{
-        if(tag===null){
+        selectedLayer.setPositionXY(pt.x-selectOffset.x,pt.y-selectOffset.y);
+
+    },[an,viewportSize,compSize,resizeMode,selectedLayer,selectOffset]);
+
+    // Set the color of selected layer
+    const setCircleColor=useCallback((color:string)=>{
+        if(!an || !selectedLayer){
             return;
         }
-        const ary=convertToNativeColor(color);
-        setColor(tag,"**.MyCircle.**.Fill 1.Color",ary[0],ary[1],ary[2],ary[3]);
-    };
+        an.accelerator?.setColor(selectedLayer.name+".**.Fill 1.Color",color);
+    },[an,selectedLayer]);
 
-    const rectR=useRef(0);
-    // Rotate MyRect by 5 deg
-    const rotateRect=()=>{
-        if(tag===null){
+
+    // Rotate selected layer by 5 deg
+    const rotateRect=useCallback(()=>{
+        if(!selectedLayer){
             return;
         }
-        rectR.current+=5;
-        setFloat(tag,"**.MyRect.Transform.Rotation",rectR.current);
-    };
+        selectedLayer.setRotation(selectedLayer.getRotation()+5);
+    },[selectedLayer]);
+
+
+    // Prints the lottie animation to the console with readable property names
+    const printAnimation=useCallback(()=>{
+        console.log(JSON.stringify(an,null,4).substr(0,10000))
+    },[an]);
+
+    // Saves the current state of the lottie animation to file
+    const saveAnimation=useCallback(()=>{
+        const json=JSON.stringify(an?.getSource());
+        fs.writeFile(`${fs.DocumentDirectoryPath}/animation.json`,json);
+    },[an]);
+
+    // Loads the previous state of the lottie animation from file
+    const loadAnimation=useCallback(async ()=>{
+        if(!view){
+            return;
+        }
+        const json=await fs.readFile(`${fs.DocumentDirectoryPath}/animation.json`);
+        setAn(new Animation(JSON.parse(json),new LottieBuilderAccelerator(view)));
+    },[view]);
+
+
 
     return (
         <View style={styles.flex1}>
+            <KeepAwake/>
             <View style={[
                 styles.flex1,
                 aspectRatio!=='fill'&&styles.center,
@@ -128,15 +204,21 @@ export default function App() {
                         aspectRatio==='fill'?styles.flex1:aspectRatio==='2:1'?styles.ar21:styles.ar12,
                     ]}
                     onLayout={(e)=>setViewportSize({...e.nativeEvent.layout})}
-                    onTouchMove={moveStar}
+                    onTouchMove={moveLayer}
+                    onTouchStart={selectLayer}
                 >
-                    <LottieView source={src} autoPlay loop resizeMode={resizeMode} />
+                    {an&&<LottieView
+                        source={an.getAnimationObject()}
+                        progress={anValue.current}
+                        resizeMode={resizeMode}
+                        imageAssetsFolder="images"/>}
                 </View>
             </View>
 
-            <View style={styles.row}>
+            <View style={styles.infoCol}>
                 <Text>Composition:{compSize.width}x{compSize.height}</Text>
                 <Text>Viewport:{viewportSize.width}x{viewportSize.height}</Text>
+                <Text>Selected:{selectedLayer?.name||'(none)'}</Text>
             </View>
 
             <View style={styles.row}>
@@ -159,6 +241,13 @@ export default function App() {
                 <Button title="2:1" onPress={()=>setAspectRatio('2:1')}/>
                 <Button title="1:2" onPress={()=>setAspectRatio('1:2')}/>
             </View>
+
+            <View style={styles.row}>
+                <Button title="print" onPress={printAnimation}/>
+                <Button title="save" onPress={saveAnimation}/>
+                <Button title="load" onPress={loadAnimation}/>
+                <Button title="reset" onPress={loadTestLottie}/>
+            </View>
         </View>
     );
 }
@@ -178,6 +267,9 @@ const styles = StyleSheet.create({
         alignItems:'center',
         paddingHorizontal:20,
         flexWrap:'wrap',
+    },
+    infoCol:{
+        margin:10,
     },
     composition:{
         backgroundColor:'#d5ffd5',

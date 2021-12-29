@@ -140,15 +140,10 @@ export class Layer extends Node{
         super(source,propMap,revPropMap);
         this.an=an;
     }
-
-    private ____TMP=false;
+    
     private getTransform():any
     {
         let trans=this.transform;
-        if(!this.____TMP){
-            this.____TMP=true;
-            console.log('inittrans ------ ',trans)
-        }
         if(!trans){
             trans={}
             this.transform=trans;

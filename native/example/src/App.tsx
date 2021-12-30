@@ -9,9 +9,13 @@ import { useRef } from "react";
 
 // test-af-lottie.aep exported using the Bodymovin extension
 const testLottie = () => require("./test-af-lottie.json");
-const hatLottie = () => require("./hat.json");
-const squreLottie = () => require("./sq.json");
-const multiLottie = () => require("./multi.json");
+const compositions={
+    hat:require("./hat.json"),
+    square:require("./sq.json"),
+    multi:require("./multi.json"),
+    bella:require("./bella.json"),
+}
+
 
 export default function App() {
 
@@ -210,19 +214,9 @@ export default function App() {
         setAn(new Animation(JSON.parse(json),new LottieBuilderAccelerator(view)));
     },[view]);
 
-    // Adds a hat to the animation
-    const addHat=useCallback(()=>{
-        an?.addPrecomposition(hatLottie(),'hat','hat',100,100);
-    },[an]);
-
-    // Adds a square to the animation
-    const addSquare=useCallback(()=>{
-        an?.addPrecomposition(squreLottie(),'sq','sq',100,100);
-    },[an]);
-
-    // Adds a square to the animation
-    const addMulti=useCallback(()=>{
-        an?.addPrecomposition(multiLottie(),'multi','multi');
+    // Adds a composition to the animation
+    const addComp=useCallback((name:keyof typeof compositions)=>{
+        an?.addPrecomposition(compositions[name],name,name);
     },[an]);
 
 
@@ -283,9 +277,10 @@ export default function App() {
 
             <View style={styles.row}>
                 <Text>Add</Text>
-                <Button title="hat" onPress={addHat}/>
-                <Button title="square" onPress={addSquare}/>
-                <Button title="multi" onPress={addMulti}/>
+                <Button title="hat" onPress={()=>addComp('hat')}/>
+                <Button title="square" onPress={()=>addComp('square')}/>
+                <Button title="multi" onPress={()=>addComp('multi')}/>
+                <Button title="Bella" onPress={()=>addComp('bella')}/>
             </View>
 
             <View style={styles.row}>

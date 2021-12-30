@@ -177,11 +177,12 @@ class ReactNativeLottieBuilder: NSObject {
                 return
             }
 
-            for layer in layers {
-                i += 1
+            i = layers.count
+            for layer in layers.reversed() {
+                i -= 1
                 let converted = layer.convert(pt, from: anView.layer)
                 if let alpha = self.getAlpha(layer,converted) {
-                    print("color[\(i)] = \(alpha)")
+                    //print("color[\(i)] = \(alpha)")
                     
                     if(alpha > 0){
                         resolve(["index":layers.count-1-i])

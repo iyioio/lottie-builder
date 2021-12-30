@@ -89,23 +89,22 @@ export default function App() {
             return;
         }
         let m=true;
-        const min=10;
-        const max=100;
-        const speed=2;
-        let dir=1;
+        const min=0.1;
+        const max=1;
+        let dir=0.01;
         let scale=100;
         const iv=setInterval(()=>{
             if(!m){
                 return;
             }
 
-            scale+=dir*speed;
+            scale+=dir;
             if(scale<min){
                 scale=min;
-                dir=1;
+                dir*=-1;
             }else if(scale>max){
                 scale=max;
-                dir=-1;
+                dir*=-1;
             }
 
             an.getLayer('MyStar')?.setScale(scale);
@@ -185,6 +184,14 @@ export default function App() {
         selectedLayer.setRotation(selectedLayer.getRotation()+5);
     },[selectedLayer]);
 
+    // Changes the selected layer's scale by the given amount
+    const updateScale=useCallback((value:number)=>{
+        if(!selectedLayer){
+            return;
+        }
+        selectedLayer.setScale(selectedLayer.getScale()+value);
+    },[selectedLayer])
+
     // Removes the selected layer from the animation
     const removeSelected=useCallback(()=>{
         if(!selectedLayer){
@@ -258,6 +265,8 @@ export default function App() {
                 <Button title="Green" onPress={()=>setSelectedColor('#0f0')}/>
                 <Button title="Blue" onPress={()=>setSelectedColor('#0000ff88')}/>
                 <Button title="Rotate" onPress={rotateSelected}/>
+                <Button title="Scale +" onPress={()=>updateScale(0.1)}/>
+                <Button title="Scale -" onPress={()=>updateScale(-0.1)}/>
                 <Button title="Remove" onPress={removeSelected}/>
             </View>
 

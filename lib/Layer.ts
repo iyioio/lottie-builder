@@ -187,45 +187,56 @@ export class Layer extends Node{
 
     public setScale(scale:number)
     {
-        this.setScaleXYZ(scale,scale,100);
+        const current=this.getScaleXY();
+        this.setScaleXYZ(scale,scale/(current.width/current.height),1);
     }
 
     public setScaleXY(scaleX:number,scaleY:number)
     {
-        this.setScaleXYZ(scaleX,scaleY,100);
+        this.setScaleXYZ(scaleX,scaleY,1);
     }
 
     public setScaleXYZ(scaleX:number,scaleY:number,scaleZ:number)
     {
         const trans=this.getTransform();
 
-        trans.s.k=[scaleX,scaleY,scaleZ];
-        this.an.accelerator?.setSize(`${this.name}.Transform.Scale`,scaleX,scaleY);
+        trans.s.k=[scaleX*100,scaleY*100,scaleZ*100];
+        this.an.accelerator?.setSize(`${this.name}.Transform.Scale`,scaleX*100,scaleY*100);
     }
 
-    public getScale():Size
+    /**
+     * Returns the x scale of the layer. Use getScaleXY or getScale3D if you need the x and y or
+     * x, y, and z scales
+     */
+    public getScale():number
     {
         const trans=this.getTransform();
-        return {width:trans.s.k[0],height:trans.s.k[1]}
+        return trans.s.k[0]/100;
+    }
+
+    public getScaleXY():Size
+    {
+        const trans=this.getTransform();
+        return {width:trans.s.k[0]/100,height:trans.s.k[1]/100}
     }
 
     public getScale3D():Size3D
     {
         const trans=this.getTransform();
-        return {width:trans.s.k[0],height:trans.s.k[1],depth:trans.s.k[2]}
+        return {width:trans.s.k[0]/100,height:trans.s.k[1]/100,depth:trans.s.k[2]/100}
     }
 
     public setPositionXY(x:number,y:number)
     {
-        this.setPositionXYZ(x,y,0);
+        this.setPosition3D(x,y,0);
     }
 
     public setPosition(pt:Point)
     {
-        this.setPositionXYZ(pt.x,pt.y,0);
+        this.setPosition3D(pt.x,pt.y,0);
     }
 
-    public setPositionXYZ(x:number,y:number,z:number)
+    public setPosition3D(x:number,y:number,z:number)
     {
         const trans=this.getTransform();
         trans.p.k=[x,y,z];

@@ -297,6 +297,40 @@ export class Animation extends Node
         return layer;
     }
 
+    public setLayerIndex(layer:Layer, index:number): boolean
+    {
+        const current=this.layers.indexOf(layer);
+        if(current===-1){
+            return false
+        }
+
+        if(index>=this.layers.length){
+            index=this.layers.length-1;
+        }
+
+        if(index<0){
+            index=0;
+        }
+
+        if(index===current){
+            return true;
+        }
+
+        this.layers.splice(current,1);
+        this.sourceLayers.splice(current,1);
+
+        this.layers.splice(index,0,layer);
+        this.sourceLayers.splice(index,0,layer.getSource());
+
+        this.updateLayerIndexes();
+
+        this.swapSource();
+
+        console.log('\n\n'+this.layers.map(l=>`${l.index} -  ${l.name}`).join('\n'))
+
+        return true;
+    }
+
     private updateLayerLookup(){
         this.layerLookup={}
         if(this.layers){

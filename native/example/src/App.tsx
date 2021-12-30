@@ -192,6 +192,14 @@ export default function App() {
         selectedLayer.setScale(selectedLayer.getScale()+value);
     },[selectedLayer])
 
+    // Changes the selected layer z-index
+    const moveZIndex=useCallback((value:number)=>{
+        if(!selectedLayer){
+            return;
+        }
+        selectedLayer.index+=value;
+    },[selectedLayer])
+
     // Removes the selected layer from the animation
     const removeSelected=useCallback(()=>{
         if(!selectedLayer){
@@ -267,6 +275,8 @@ export default function App() {
                 <Button title="Rotate" onPress={rotateSelected}/>
                 <Button title="Scale +" onPress={()=>updateScale(0.1)}/>
                 <Button title="Scale -" onPress={()=>updateScale(-0.1)}/>
+                <Button title="Z +" onPress={()=>moveZIndex(1)}/>
+                <Button title="Z -" onPress={()=>moveZIndex(-1)}/>
                 <Button title="Remove" onPress={removeSelected}/>
             </View>
 

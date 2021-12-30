@@ -96,9 +96,6 @@ export class Layer extends Node{
     public get id():string|undefined{return this.getValue(LayerPropMap.id)}
     public set id(value:string|undefined){this.setValue(LayerPropMap.id,value)}
 
-    public get index():number|undefined{return this.getValue(LayerPropMap.index)}
-    public set index(value:number|undefined){this.setValue(LayerPropMap.index,value)}
-
     public get inPoint():number|undefined{return this.getValue(LayerPropMap.inPoint)}
     public set inPoint(value:number|undefined){this.setValue(LayerPropMap.inPoint,value)}
 
@@ -131,6 +128,15 @@ export class Layer extends Node{
 
     public get transform():any|undefined{return this.getValue(LayerPropMap.transform)}
     public set transform(value:any|undefined){this.setValue(LayerPropMap.transform,value)}
+
+
+
+    public get index():number{
+        return this.getValue(LayerPropMap.index)||0
+    }
+    public set index(value:number){
+        this.an.setLayerIndex(this,value);
+    }
 
     public constructor(
         an:Animation,

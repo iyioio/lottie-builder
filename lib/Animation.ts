@@ -111,34 +111,16 @@ export class Animation extends Node
 
     }
 
-    private updateLayerLookup(){
-        this.layerLookup={}
-        if(this.layers){
-            for(const l of this.layers){
-                const name=l.name;
-                if(name){
-                    this.layerLookup[name]=l;
-                }
-            }
-        }
-    }
-
-    private updateAssetLookup(){
-        this.assetLookup={}
-        if(this.assets){
-            for(const a of this.assets){
-                const id=a.id;
-                if(id){
-                    this.assetLookup[id]=a;
-                }
-            }
-        }
-    }
-
     public getAnimationObject():AnimationObject
     {
         return this.getSource() as AnimationObject;
     }
+
+
+
+      //////////////
+     /// Layers ///
+    //////////////
 
     public getLayer(name:string):Layer|null
     {
@@ -158,168 +140,26 @@ export class Animation extends Node
         return this.layers[index];
     }
 
-    public getAsset(id:string):Asset|null
+    public addLayer(layerSource:SourceObject, index:number=0, triggerSourceChange=true):Layer
     {
-        return this.assetLookup[id]||null;
-    }
 
-    private getUniqueAssetId(prefix:string):string
-    {
-        return prefix+'_'+newId();
-    }
-
-    private getUniqueLayerName(name:string):string
-    {
-        if(!this.layerLookup[name]){
-            return name;
+        if(index>this.sourceLayers.length){
+            index=this.sourceLayers.length-1;
         }
 
-        return name+'_'+newId();
-    }
-
-    private remapLayerRefs(layers:SourceObject[], id:string, newId:string, sourceId:string)
-    {
-        for(const l of layers){
-            if(l.refId===id){
-                l.refId=newId;
-            }
-        }
-    }
-
-    private assetKeyComparer:KeyComparer=(
-        key:string,
-        depth:number,
-        newAsset:any,
-        existingAsset:any,
-        state:any)=>
-    {
-        if(depth===0){
-            return key==='id'?true:undefined;
+        if(index<0){
+            index=0;
         }
 
-        if(key!=='refId' || !newAsset.refId || newAsset.refId===existingAsset.refId){
-            return undefined;
-        }
-
-        const inComingAssets:SourceObject[]=state;
-        if(!inComingAssets){
-            return undefined;
-        }
-
-        let inComingRefed:SourceObject|null=null;
-        for(const a of inComingAssets){
-            if(a.id===newAsset.refId){
-                inComingRefed=a;
-                break;
-            }
-        }
-
-        if(!inComingRefed){
-            return undefined;
-        }
-
-        const existingRefed=this.getAsset(existingAsset.refId)?.getSource();
-        if(!existingRefed){
-            return undefined;
-        }
-
-        return deepCompare(inComingRefed,existingRefed,this.assetKeyComparer,state,200-depth)
-        
-        
-    }
-
-    private getMatchingAsset(asset:SourceObject, inComingAssets:SourceObject[], stopIndex?:number):SourceObject|null
-    {
-        const ary=this.source.assets;
-        if(!ary){
-            return null;
-        }
-        for(let i=0;i<ary.length;i++){
-            const a=ary[i];
-            if(deepCompare(asset,a,this.assetKeyComparer,inComingAssets)){
-                return a;
-            }
-            if(i===stopIndex){
-                break;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Adds the assets of the given animation to this animation and remaps
-     * asset ids. Duplicate assets will be merged.
-     * @param animation 
-     */
-    private addAssets(animation:SourceObject, sourceId:string, triggerSourceChange=true)
-    {
-        const assets=animation.assets;
-        if(!assets?.length){
-            return;
-        }
-
-        const layers=animation.layers;
-
-        const stopIndex=(this.assets?.length||0)-1;
-
-        for(const a of assets){
-            const id=a.id;
-            let add=true;
-            if(this.assetLookup[id]){// remap
-                const match=this.getMatchingAsset(a,animation.assets,stopIndex);
-                if(match){
-                    add=false;
-                }
-                if(!match || match.id!==id){
-                    const newId=match?.id||this.getUniqueAssetId(id);
-                    a.id=newId;
-                    if(layers){
-                        this.remapLayerRefs(layers,id,newId,sourceId);
-                    }
-                    for(const layerAsset of assets){
-                        if(layerAsset.layers){
-                            this.remapLayerRefs(layerAsset.layers,id,newId,sourceId);
-                        }
-                    }
-                }
-            }
-
-            if(add){
-                this.addAsset(a,false);
-            }
-        }
-
+        this.sourceLayers.splice(index,0,layerSource);
+        const layer=createLayer(this,layerSource);
+        this.layers.splice(index,0,layer);
+        this.updateLayerLookup();
+        this.updateLayerIndexes();
         if(triggerSourceChange){
             this.swapSource();
         }
-    }
-
-
-
-    private getAssetLayerRefCount(layers:SourceObject[], id:string):number
-    {
-        let count=0;
-
-        for(const l of layers){
-            if(l.refId===id){
-                count++;
-            }
-        }
-
-        return count;
-    }
-
-    private getAssetRefCount(id:string):number
-    {
-        let count=this.getAssetLayerRefCount(this.sourceLayers,id);
-
-        for(const a of this.sourceAssets){
-            if(a.layers){
-                count+=this.getAssetLayerRefCount(a.layers,id);
-            }
-        }
-
-        return count;
+        return layer;
     }
 
     public removeLayer(layer:Layer, triggerSourceChange=true):boolean
@@ -339,36 +179,7 @@ export class Animation extends Node
         }
 
         this.updateLayerLookup();
-
-        if(triggerSourceChange){
-            this.swapSource();
-        }
-
-        return true;
-    }
-
-    public removeAsset(id:string, triggerSourceChange=true):boolean
-    {
-
-        if(!this.assetLookup[id]){
-            return false;
-        }
-
-        const src=this.sourceAssets.find(a=>a.id===id);
-        const asset=this.assets.find(a=>a.id===id);
-
-        aryRemoveItem(this.sourceAssets,src);
-        aryRemoveItem(this.assets,asset);
-
-        if(src?.layers){
-            for(const l of src.layers){
-                if(l.refId && this.getAssetRefCount(l.refId)===0){
-                    this.removeAsset(l.refId,false);
-                }
-            }
-        }
-
-        this.updateAssetLookup();
+        this.updateLayerIndexes();
 
         if(triggerSourceChange){
             this.swapSource();
@@ -381,6 +192,7 @@ export class Animation extends Node
         animation:SourceObject,
         sourceId:string,
         name:string,
+        index?:number,
         x?:number,
         y?:number,
         width?:number,
@@ -423,7 +235,7 @@ export class Animation extends Node
             [LayerPropMap.name.name]:name,
             [LayerPropMap.is3D.name]:0,
             [LayerPropMap.type.name]:LayerType.PRECOMPOSITION,
-            [LayerPropMap.index.name]:this.layers?.length||0,
+            [LayerPropMap.index.name]:0,
             [LayerPropMap.refId.name]:comp.id,
             [LayerPropMap.startTime.name]:1,
             [LayerPropMap.autoOrient.name]:0,
@@ -478,26 +290,52 @@ export class Animation extends Node
             this.addAsset(comp,false);
         }
 
-        const layer=this.addLayer(layerSource,false);
+        const layer=this.addLayer(layerSource,index);
 
         this.swapSource();
 
         return layer;
     }
 
-    public addLayer(layerSource:SourceObject, triggerSourceChange=true):Layer
+    private updateLayerLookup(){
+        this.layerLookup={}
+        if(this.layers){
+            for(const l of this.layers){
+                const name=l.name;
+                if(name){
+                    this.layerLookup[name]=l;
+                }
+            }
+        }
+    }
+
+    private updateLayerIndexes()
     {
-        if(!this.source.layers){
-            this.source.layers=[];
+        for(let i=0;i<this.sourceLayers.length;i++){
+            const l=this.sourceLayers[i];
+            l[LayerPropMap.index.name]=i;
         }
-        this.source.layers.push(layerSource);
-        const layer=createLayer(this,layerSource);
-        this.layers?.push(layer);
-        this.updateLayerLookup();
-        if(triggerSourceChange){
-            this.swapSource();
+    }
+
+    private getUniqueLayerName(name:string):string
+    {
+        if(!this.layerLookup[name]){
+            return name;
         }
-        return layer;
+
+        return name+'_'+newId();
+    }
+
+
+
+
+      //////////////
+     /// Assets ///
+    //////////////
+
+    public getAsset(id:string):Asset|null
+    {
+        return this.assetLookup[id]||null;
     }
 
     public addAsset(assetSource:SourceObject, triggerSourceChange=true)
@@ -513,6 +351,194 @@ export class Animation extends Node
             this.swapSource();
         }
         return asset;
+    }
+
+    public removeAsset(id:string, triggerSourceChange=true):boolean
+    {
+
+        if(!this.assetLookup[id]){
+            return false;
+        }
+
+        const src=this.sourceAssets.find(a=>a.id===id);
+        const asset=this.assets.find(a=>a.id===id);
+
+        aryRemoveItem(this.sourceAssets,src);
+        aryRemoveItem(this.assets,asset);
+
+        if(src?.layers){
+            for(const l of src.layers){
+                if(l.refId && this.getAssetRefCount(l.refId)===0){
+                    this.removeAsset(l.refId,false);
+                }
+            }
+        }
+
+        this.updateAssetLookup();
+
+        if(triggerSourceChange){
+            this.swapSource();
+        }
+
+        return true;
+    }
+
+    private getUniqueAssetId(prefix:string):string
+    {
+        return prefix+'_'+newId();
+    }
+
+    private getAssetLayerRefCount(layers:SourceObject[], id:string):number
+    {
+        let count=0;
+
+        for(const l of layers){
+            if(l.refId===id){
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private updateAssetLookup(){
+        this.assetLookup={}
+        if(this.assets){
+            for(const a of this.assets){
+                const id=a.id;
+                if(id){
+                    this.assetLookup[id]=a;
+                }
+            }
+        }
+    }
+
+    private getAssetRefCount(id:string):number
+    {
+        let count=this.getAssetLayerRefCount(this.sourceLayers,id);
+
+        for(const a of this.sourceAssets){
+            if(a.layers){
+                count+=this.getAssetLayerRefCount(a.layers,id);
+            }
+        }
+
+        return count;
+    }
+
+    private getMatchingAsset(asset:SourceObject, inComingAssets:SourceObject[], stopIndex?:number):SourceObject|null
+    {
+        const ary=this.source.assets;
+        if(!ary){
+            return null;
+        }
+        for(let i=0;i<ary.length;i++){
+            const a=ary[i];
+            if(deepCompare(asset,a,this.assetKeyComparer,inComingAssets)){
+                return a;
+            }
+            if(i===stopIndex){
+                break;
+            }
+        }
+        return null;
+    }
+
+    private remapLayerRefs(layers:SourceObject[], id:string, newId:string, sourceId:string)
+    {
+        for(const l of layers){
+            if(l.refId===id){
+                l.refId=newId;
+            }
+        }
+    }
+
+    private assetKeyComparer:KeyComparer=(
+        key:string,
+        depth:number,
+        newAsset:any,
+        existingAsset:any,
+        state:any)=>
+    {
+        if(depth===0){
+            return key==='id'?true:undefined;
+        }
+
+        if(key!=='refId' || !newAsset.refId || newAsset.refId===existingAsset.refId){
+            return undefined;
+        }
+
+        const inComingAssets:SourceObject[]=state;
+        if(!inComingAssets){
+            return undefined;
+        }
+
+        let inComingRefed:SourceObject|null=null;
+        for(const a of inComingAssets){
+            if(a.id===newAsset.refId){
+                inComingRefed=a;
+                break;
+            }
+        }
+
+        if(!inComingRefed){
+            return undefined;
+        }
+
+        const existingRefed=this.getAsset(existingAsset.refId)?.getSource();
+        if(!existingRefed){
+            return undefined;
+        }
+
+        return deepCompare(inComingRefed,existingRefed,this.assetKeyComparer,state,200-depth)
+    }
+
+    /**
+     * Adds the assets of the given animation to this animation and remaps
+     * asset ids. Duplicate assets will be merged.
+     * @param animation 
+     */
+    private addAssets(animation:SourceObject, sourceId:string, triggerSourceChange=true)
+    {
+        const assets=animation.assets;
+        if(!assets?.length){
+            return;
+        }
+
+        const layers=animation.layers;
+
+        const stopIndex=(this.assets?.length||0)-1;
+
+        for(const a of assets){
+            const id=a.id;
+            let add=true;
+            if(this.assetLookup[id]){// remap
+                const match=this.getMatchingAsset(a,animation.assets,stopIndex);
+                if(match){
+                    add=false;
+                }
+                if(!match || match.id!==id){
+                    const newId=match?.id||this.getUniqueAssetId(id);
+                    a.id=newId;
+                    if(layers){
+                        this.remapLayerRefs(layers,id,newId,sourceId);
+                    }
+                    for(const layerAsset of assets){
+                        if(layerAsset.layers){
+                            this.remapLayerRefs(layerAsset.layers,id,newId,sourceId);
+                        }
+                    }
+                }
+            }
+
+            if(add){
+                this.addAsset(a,false);
+            }
+        }
+
+        if(triggerSourceChange){
+            this.swapSource();
+        }
     }
 
     override swapSource()

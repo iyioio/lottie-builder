@@ -15,4 +15,6 @@ export interface Accelerator{
     getLayerIndexAtPtAsync(x:number,y:number):Promise<number>;
 
     setLayerHighlight(layerIndex:number, enabled:boolean, color: string, weight: number):void;
+
+    setLayerHidden(layerIndex:number,hidden:boolean):void;
 }

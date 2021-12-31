@@ -111,6 +111,18 @@ export class Animation extends Node
 
     }
 
+    public clone():Animation
+    {
+        return new Animation(this.getSource(),this.accelerator,true);
+    }
+
+    public export():AnimationObject
+    {
+        const clone=this.clone();
+        clone.removeHiddenLayers();
+        return clone.getAnimationObject();
+    }
+
     public getAnimationObject():AnimationObject
     {
         return this.getSource() as AnimationObject;
@@ -186,6 +198,19 @@ export class Animation extends Node
         }
 
         return true;
+    }
+
+    public removeHiddenLayers():number
+    {
+        const layers=this.layers.filter(l=>l.isHidden);
+        if(layers.length===0){
+            return 0;
+        }
+        for(const l of layers){
+            this.removeLayer(l,false);
+        }
+        this.swapSource();
+        return layers.length;
     }
 
     public addPrecomposition(

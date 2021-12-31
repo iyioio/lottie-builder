@@ -120,9 +120,6 @@ export class Layer extends Node{
     public get matteTarget():number|undefined{return this.getValue(LayerPropMap.matteTarget)}
     public set matteTarget(value:number|undefined){this.setValue(LayerPropMap.matteTarget,value)}
 
-    public get isHidden():number|undefined{return this.getValue(LayerPropMap.isHidden)}
-    public set isHidden(value:number|undefined){this.setValue(LayerPropMap.isHidden,value)}
-
     public get matchName():string|undefined{return this.getValue(LayerPropMap.matchName)}
     public set matchName(value:string|undefined){this.setValue(LayerPropMap.matchName,value)}
 
@@ -132,10 +129,20 @@ export class Layer extends Node{
 
 
     public get index():number{
-        return this.getValue(LayerPropMap.index)||0
+        return this.getValue(LayerPropMap.index)||0;
     }
     public set index(value:number){
         this.an.setLayerIndex(this,value);
+    }
+
+
+
+    public get isHidden():boolean{
+        return this.getValue(LayerPropMap.isHidden)?true:false;
+    }
+    public set isHidden(value:boolean){
+        this.setValue(LayerPropMap.isHidden,value?1:0);
+        this.an.accelerator?.setLayerHidden(this.an.layers?.indexOf(this)??-1,value);
     }
 
     public constructor(

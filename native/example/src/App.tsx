@@ -277,6 +277,7 @@ export default function App() {
                 <Button title="Scale -" onPress={()=>updateScale(-0.1)}/>
                 <Button title="Z +" onPress={()=>moveZIndex(1)}/>
                 <Button title="Z -" onPress={()=>moveZIndex(-1)}/>
+                {selectedLayer&&<Button title="Vis" onPress={()=>selectedLayer.isHidden=!selectedLayer.isHidden}/>}
                 <Button title="Remove" onPress={removeSelected}/>
             </View>
 

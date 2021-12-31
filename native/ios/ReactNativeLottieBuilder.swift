@@ -201,15 +201,10 @@ class ReactNativeLottieBuilder: NSObject {
     {
         DispatchQueue.main.async {
             
-            guard let anView = self.findAnimationView(tag),
-                  let lc = anView.layer.sublayers?.count,
-                  let layers = lc == 0 ? nil : anView.layer.sublayers?[0].sublayers,
-                  layers.count>layerIndex && layerIndex>=0 else
+            guard let layer = self.getLayer(tag, layerIndex) else
             {
                 return
             }
-            
-            let layer = layers[layers.count-1-layerIndex]
             
             if enabled == 0 {
                 layer.shadowColor = nil
@@ -222,6 +217,36 @@ class ReactNativeLottieBuilder: NSObject {
             }
         }
     }
+    
+    @objc(setLayerHidden:layerIndex:hidden:)
+    func setLayerHidden(_ tag:NSNumber, _ layerIndex:Int, _ hidden:Int) -> Void
+    {
+        DispatchQueue.main.async {
+            
+            guard let layer = self.getLayer(tag, layerIndex) else
+            {
+                return
+            }
+            
+            layer.isHidden = hidden != 0
+        }
+    }
+    
+    func getLayer(_ tag:NSNumber, _ layerIndex:Int) -> CALayer?
+    {
+            
+        guard let anView = self.findAnimationView(tag),
+              let lc = anView.layer.sublayers?.count,
+              let layers = lc == 0 ? nil : anView.layer.sublayers?[0].sublayers,
+              layers.count>layerIndex && layerIndex>=0 else
+        {
+            return nil
+        }
+        
+        return layers[layers.count-1-layerIndex]
+    }
+    
+    
 
     private func findAnimationView(_ tag:NSNumber)->AnimationView?
     {

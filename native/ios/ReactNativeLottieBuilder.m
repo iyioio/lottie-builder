@@ -44,4 +44,8 @@ RCT_EXTERN_METHOD(setLayerHighlight:(NSNumber * _Nonnull)tag
                   alpha:(CGFloat)a
                   weight:(CGFloat)weight);
 
+RCT_EXTERN_METHOD(setLayerHidden:(NSNumber * _Nonnull)tag
+                  layerIndex:(NSInteger)layerIndex
+                  hidden:(NSInteger)hidden);
+
 @end

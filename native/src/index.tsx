@@ -163,6 +163,18 @@ export function setLayerHighlight(
     ReactNativeLottieBuilder.setLayerHighlight(tag,layerIndex,enabled,red,green,blue,alpha,weight);
 }
 
+export function setLayerHidden(
+    tag:number,
+    layerIndex:number,
+    hidden:boolean)
+{
+    if(logNativeCalls){
+        console.debug('setLayerHidden',{tag,layerIndex,hidden})
+    }
+    assertNumbers(tag,layerIndex)
+    ReactNativeLottieBuilder.setLayerHidden(tag,layerIndex,hidden?1:0);
+}
+
 /**
  * Can be used as an accelerator for the lottie-builder package. Without an accelerator lottie-builder
  * regenerates the full AnimationView of a LottieView for every property change which is very bad
@@ -223,6 +235,11 @@ export class LottieBuilderAccelerator implements Accelerator{
     {
         const ary=convertToNativeColor(color);
         return setLayerHighlight(this.tag,layerIndex,enabled?1:0,ary[0],ary[1],ary[2],ary[3],weight);
+    }
+
+    public setLayerHidden(layerIndex:number,hidden:boolean)
+    {
+        return setLayerHidden(this.tag,layerIndex,hidden);
     }
 }
 

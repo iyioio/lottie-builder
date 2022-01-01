@@ -60,3 +60,14 @@ export function createEvent<TListener>():EventSourceT<TListener>
         ) as any
     };
 }
+
+export function joinRemoveListeners(...listeners:(()=>void)[])
+{
+    return ()=>{
+        if(listeners){
+            for(const l of listeners){
+                l();
+            }
+        }
+    }
+}

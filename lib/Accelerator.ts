@@ -12,7 +12,7 @@ export interface Accelerator{
 
     getCompositionSizeAsync():Promise<Size>;
 
-    getLayerIndexAtPtAsync(x:number,y:number):Promise<number>;
+    getLayerIndexAtPtAsync(x:number,y:number,radius:number):Promise<number>;
 
     setLayerHighlight(layerIndex:number, enabled:boolean, color: string, weight: number):void;
 

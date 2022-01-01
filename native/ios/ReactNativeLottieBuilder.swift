@@ -117,51 +117,75 @@ class ReactNativeLottieBuilder: NSObject {
         }
     }
     
-    private let pixels = UnsafeMutablePointer<CUnsignedChar>.allocate(capacity:4)
+    private static let maxHitTestRadius=100
+    private let pixels = UnsafeMutablePointer<CUnsignedChar>.allocate(capacity:maxHitTestRadius*2*maxHitTestRadius*2*4)
     private let colorSpace = CGColorSpaceCreateDeviceRGB()
     private let bitmapInfo = CGBitmapInfo(rawValue:CGImageAlphaInfo.premultipliedLast.rawValue)
     private var _context : CGContext?
+    private var contextRadius : Int = -1
     private var contextTransX:CGFloat = 0
     private var contextTransY:CGFloat = 0
     
-    private func getAlpha(_ layer:CALayer, _ point:CGPoint) -> CGFloat?
+    // Returns the alpha value of the of the most opace pixel at the given point and radius
+    private func getAlpha(_ layer:CALayer, _ point:CGPoint, _ radius:Int) -> CGFloat?
     {
-        pixels[0]=0;
-        pixels[1]=0;
-        pixels[2]=0;
-        pixels[3]=0;
-
-        let colorSpace = CGColorSpaceCreateDeviceRGB()
-        let bitmapInfo = CGBitmapInfo(rawValue:CGImageAlphaInfo.premultipliedLast.rawValue)
-        if _context == nil {
+        let r:Int = radius < 0 ? 0 :
+            ( radius > ReactNativeLottieBuilder.maxHitTestRadius ? ReactNativeLottieBuilder.maxHitTestRadius : radius )
+        
+        let dm=r*2
+        
+        self.pixels.initialize(repeating: 0, count: dm*dm*4)
+        
+        if _context == nil || contextRadius != r {
+            contextRadius = r
+            let colorSpace = CGColorSpaceCreateDeviceRGB()
+            let bitmapInfo = CGBitmapInfo(rawValue:CGImageAlphaInfo.premultipliedLast.rawValue)
             _context = CGContext(
                 data: pixels,
-                width: 1,
-                height: 1,
+                width: dm,
+                height: dm,
                 bitsPerComponent: 8,
-                bytesPerRow: 4,
+                bytesPerRow: dm*4,
                 space: colorSpace,
                 bitmapInfo: bitmapInfo.rawValue)
         }
         
-        guard let context = _context  else
+        guard let context = _context else
         {
             return nil
         }
         context.translateBy(x: contextTransX, y: contextTransY)
-        contextTransX=point.x
-        contextTransY=point.y
+        contextTransX=round(point.x - CGFloat(r))
+        contextTransY=round(point.y - CGFloat(r))
         context.translateBy(x: -contextTransX, y: -contextTransY)
 
         layer.render(in: context)
 
-        let alpha=CGFloat(pixels[3])/255.0
+        var alpha:CGFloat = 0
+        
+        //let alpha=CGFloat(pixels[3])/255.0
+        
+        let rd=Double(r)
+        
+        for xp in 0...dm {
+            let xr=Double(r-xp)
+            for yp in 0...dm {
+                let yr=Double(r-yp)
+                if sqrt(xr*xr + yr*yr) > rd {
+                    continue
+                }
+                let a = CGFloat(pixels[xp * yp * 4])/255.0
+                if a > alpha {
+                    alpha = a
+                }
+            }
+        }
 
         return alpha
     }
 
-    @objc(getLayerIndexAtPt:x:y:withResolver:withRejecter:)
-    func getLayerIndexAtPt(_ tag:NSNumber, x:CGFloat, y:CGFloat,
+    @objc(getLayerIndexAtPt:x:y:radius:withResolver:withRejecter:)
+    func getLayerIndexAtPt(_ tag:NSNumber, x:CGFloat, y:CGFloat, radius: Int,
                       resolve:@escaping RCTPromiseResolveBlock,  reject:@escaping RCTPromiseRejectBlock)->Void
     {
         DispatchQueue.main.async {
@@ -181,7 +205,7 @@ class ReactNativeLottieBuilder: NSObject {
             for layer in layers.reversed() {
                 i -= 1
                 let converted = layer.convert(pt, from: anView.layer)
-                if let alpha = self.getAlpha(layer,converted) {
+                if let alpha = self.getAlpha(layer,converted,radius) {
                     //print("color[\(i)] = \(alpha)")
                     
                     if(alpha > 0){

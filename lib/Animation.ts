@@ -147,12 +147,12 @@ export class Animation extends Node
         return this.layerLookup[name]||null;
     }
 
-    public async getLayerAtPtAsync(x:number,y:number):Promise<Layer|null>
+    public async getLayerAtPtAsync(x:number,y:number,radius:number=8):Promise<Layer|null>
     {
         if(!this.accelerator || !this.layers){
             return null;
         }
-        const index=await this.accelerator.getLayerIndexAtPtAsync(x,y);
+        const index=await this.accelerator.getLayerIndexAtPtAsync(x,y,radius);
         if(index<0 || index>=this.layers.length){
             return null;
         }

@@ -129,14 +129,15 @@ export async function getCompositionSizeAsync(
  * @param tag React native tag of a LottieView or a view that contains a LottieView
  * @param x X position
  * @param y Y position
+ * @param radius radius of the hit test area to use
  */
-export async function getLayerIndexAtPtAsync(tag:number,x:number,y:number):Promise<number>
+export async function getLayerIndexAtPtAsync(tag:number,x:number,y:number,radius:number):Promise<number>
 {
     if(logNativeCalls){
-        console.debug('getLayerIndexAtPt',{tag,x,y})
+        console.debug('getLayerIndexAtPt',{tag,x,y,radius})
     }
-    assertNumbers(tag,x,y)
-    const r=await ReactNativeLottieBuilder.getLayerIndexAtPt(tag,x,y);
+    assertNumbers(tag,x,y,radius)
+    const r=await ReactNativeLottieBuilder.getLayerIndexAtPt(tag,x,y,radius);
     return r?r.index:-1;
 }
 
@@ -246,9 +247,9 @@ export class LottieBuilderAccelerator implements Accelerator{
         return getCompositionSizeAsync(this.tag);
     }
 
-    public getLayerIndexAtPtAsync(x:number,y:number):Promise<number>
+    public getLayerIndexAtPtAsync(x:number,y:number,radius:number):Promise<number>
     {
-        return getLayerIndexAtPtAsync(this.tag,x,y);
+        return getLayerIndexAtPtAsync(this.tag,x,y,radius);
     }
 
     public setLayerHighlight(

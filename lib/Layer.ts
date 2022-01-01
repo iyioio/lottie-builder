@@ -1,5 +1,5 @@
 import { Animation } from "./Animation";
-import { BlendMode, createRevPropMap, LayerType, MatteMode, ObjectType, Point, Point3D, PropertyMap, Size, Size3D, SourceObject } from "./common";
+import { BlendMode, convertToLottieColor, createRevPropMap, defaultTextColor, defaultTextFont, defaultTextSize, LayerType, MatteMode, ObjectType, Point, Point3D, PropertyMap, Size, Size3D, SourceObject } from "./common";
 import { Node } from './Node';
 
 export function createLayer(an:Animation,source:SourceObject)
@@ -402,8 +402,13 @@ export class TextLayer extends Layer{
         super(an,source,TextLayerPropMap,TextLayerRevPropMap);
     }
 
-    public static createTextData(text:string,size:number=36,font:string='Arial'):any
+    public static createTextData(
+        text:string,
+        size:number=defaultTextSize,
+        color:string=defaultTextColor,
+        font:string=defaultTextFont):any
     {
+        const colorAry=convertToLottieColor(color);
         return {
             "d": {
                 "k": [
@@ -416,11 +421,7 @@ export class TextLayer extends Layer{
                             "tr": 0,
                             "lh": 43.2,
                             "ls": 0,
-                            "fc": [
-                                1,
-                                1,
-                                1
-                            ]
+                            "fc": colorAry
                         },
                         "t": 0
                     }

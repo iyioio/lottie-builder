@@ -245,6 +245,11 @@ export default function App() {
         an?.importAnimation(compositions[name],name);
     },[an]);
 
+    // Adds a text layer to the animation
+    const addText=useCallback((text:string)=>{
+        an?.addTextLayer(text,'text')
+    },[an]);
+
 
 
     return (
@@ -315,6 +320,7 @@ export default function App() {
                 <Button title="square" onPress={()=>addComp('square')}/>
                 <Button title="multi" onPress={()=>addComp('multi')}/>
                 <Button title="Bella" onPress={()=>addComp('bella')}/>
+                <Button title="Text" onPress={()=>addText('Shake\'n Bake')}/>
             </View>
 
             <View style={styles.row}>

@@ -1,9 +1,9 @@
 import { BlendMode, LayerType } from "@lottiefiles/lottie-js";
 import { Accelerator } from "./Accelerator";
 import { Asset } from "./Asset";
-import { createRevPropMap, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
+import { createRevPropMap, defaultTextColor, defaultTextFont, defaultTextSize, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
 import { createEvent, EventSource, EventSourceT } from './Event';
-import { createLayer, Layer, LayerPropMap, PrecompositionLayer } from "./Layer";
+import { createLayer, Layer, LayerPropMap, PrecompositionLayer, TextLayer, TextLayerPropMap } from "./Layer";
 import { Marker } from "./Marker";
 import { Meta } from "./Meta";
 import { Node } from './Node';
@@ -280,6 +280,99 @@ export class Animation extends Node
     }
 
     /**
+     * Adds a new text layer to the animation
+     * @param text Text to add
+     * @param name Name of the layer to be added
+     * @param name The name the layer will be given
+     * @param index The index which to insert the layer
+     * @param x The X position where to place the layer. If undefined the layer will be centered.
+     * @param y The Y position where to place the layer. If undefined the layer will be centered.
+     * @param size Font size
+     * @param color Font color
+     * @param font Font family
+     * @returns 
+     */
+    public addTextLayer(
+        text:string,
+        name:string,
+        index?:number,
+        x?:number,
+        y?:number,
+        size:number=defaultTextSize,
+        color:string=defaultTextColor,
+        font:string=defaultTextFont
+    ):TextLayer{
+
+        const textData=TextLayer.createTextData(text,size,color,font);
+
+        if(x===undefined){
+            x=(this.width||0)/2
+        }
+        if(y===undefined){
+            y=(this.height||0)/2
+        }
+
+        const layerSource={
+            [TextLayerPropMap.textData.name]: textData,
+            [LayerPropMap.is3D.name]: 0,
+            [LayerPropMap.index.name]: 0,
+            [LayerPropMap.type.name]: LayerType.TEXT,
+            [LayerPropMap.name.name]: name,
+            [LayerPropMap.timeStretch.name]: 1,
+            [LayerPropMap.autoOrient.name]: 0,
+            [LayerPropMap.inPoint.name]:this.isPoint,
+            [LayerPropMap.outPoint.name]:this.outPoint,
+            [LayerPropMap.startTime.name]: 0,
+            [LayerPropMap.blendMode.name]: BlendMode.NORMAL,
+            [LayerPropMap.transform.name]: {
+                "o": {
+                    "a": 0,
+                    "k": 100,
+                    "ix": 11
+                },
+                "r": {
+                    "a": 0,
+                    "k": 0,
+                    "ix": 10
+                },
+                "p": {
+                    "a": 0,
+                    "k": [
+                        x,
+                        y,
+                        0
+                    ],
+                    "ix": 2
+                },
+                "a": {
+                    "a": 0,
+                    "k": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "ix": 1
+                },
+                "s": {
+                    "a": 0,
+                    "k": [
+                        100,
+                        100,
+                        100
+                    ],
+                    "ix": 6
+                }
+            },
+        }
+
+        const layer=this.addLayer(layerSource,index) as TextLayer;
+
+        this.swapSource();
+
+        return layer;
+    }
+
+    /**
      * Imports a lottie file into this animation as a precomposition layer. The lottie file will
      * be converted to an asset and a precomposition layer will be created the references the newly
      * created asset. Assets of the lottie file will be merged with the assets of this animation
@@ -347,8 +440,8 @@ export class Animation extends Node
             [LayerPropMap.autoOrient.name]:0,
             [LayerPropMap.width.name]:width,
             [LayerPropMap.height.name]:height,
-            [LayerPropMap.inPoint.name]:0,// todo - lookup
-            [LayerPropMap.outPoint.name]:150,// todo - lookup
+            [LayerPropMap.inPoint.name]:this.isPoint,
+            [LayerPropMap.outPoint.name]:this.outPoint,
             [LayerPropMap.startTime.name]:0,
             [LayerPropMap.blendMode.name]:BlendMode.NORMAL,
             [LayerPropMap.transform.name]:{
@@ -396,7 +489,7 @@ export class Animation extends Node
             this.addAsset(comp,false);
         }
 
-        const layer=this.addLayer(layerSource,index) as PrecompositionLayer;
+        const layer=this.addLayer(layerSource,index,false) as PrecompositionLayer;
 
         this.swapSource();
 

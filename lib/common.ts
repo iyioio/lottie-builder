@@ -62,6 +62,10 @@ export type Point3D={x:number,y:number,z:number}
 
 export type ResizeMode = "cover" | "contain" | "center";
 
+export const defaultTextSize=36;
+export const defaultTextColor='#333333';
+export const defaultTextFont='Arial';
+
 export interface PropertyInfo
 {
     /**
@@ -156,7 +160,10 @@ export function viewportPointToCompPoint(x:number,y:number,viewPortSize:Size,com
     return {x,y};
 }
 
-// source - https://github.com/firebase/firebase-js-sdk/blob/6abd6484730971e2390b2b9acbb61800852fb350/packages/firestore/src/util/misc.ts
+/**
+ * Creates a new unique Id
+ * @see https://github.com/firebase/firebase-js-sdk/blob/6abd6484730971e2390b2b9acbb61800852fb350/packages/firestore/src/util/misc.ts
+ */
 export function newId(): string {
     // Alphanumeric characters
     const chars =
@@ -166,4 +173,62 @@ export function newId(): string {
         autoId += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return autoId;
+}
+
+/**
+ * Converts a hex string to a lottie color array of floating point numbers
+ * @param color A hex string
+ */
+export function convertToLottieColor(color:string):[number,number,number,number]
+{
+    if(color && color.startsWith('#')){
+        color=color.substr(1);
+    }
+    if(!color){
+        return [0,0,0,1];
+    }
+    switch(color.length){
+
+        // [rgb]FF
+        case 1:
+            color=color+color+color+color+color+color+'FF';
+            break;
+
+        // [rgb][a]
+        case 2:
+            color=color[0]+color[0]+color[0]+color[0]+color[0]+color[0]+color[1]+color[1];
+            break;
+
+        // [r][g][b]FF
+        case 3:
+            color=color[0]+color[0]+color[1]+color[1]+color[2]+color[2]+'FF';
+            break;
+
+        // [r][g][b][a]
+        case 4:
+            color=color[0]+color[0]+color[1]+color[1]+color[2]+color[2]+color[3]+color[3];
+            break;
+
+        // [r][g][b][a0][a1]
+        case 5:
+            color=color[0]+color[0]+color[1]+color[1]+color[2]+color[2]+color[3]+color[4];
+            break;
+
+        // [r0][r1][g0][g1][b0][b1]FF
+        case 6:
+            color+='FF';
+            break;
+
+        // [r0][r1][g0][g1][b0][b1][a]
+        case 7:
+            color+=color[6];
+            break;
+    }
+
+    return [
+        Number('0x'+color.substr(0,2))/255,
+        Number('0x'+color.substr(2,2))/255,
+        Number('0x'+color.substr(4,2))/255,
+        Number('0x'+color.substr(6,2))/255,
+    ];
 }

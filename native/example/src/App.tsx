@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Animated, Button, GestureResponderEvent, StyleSheet, Text, View } from "react-native";
+import { Animated, Button, GestureResponderEvent, StyleSheet, Text, TextInput, View } from "react-native";
 import { LottieBuilderAccelerator } from "@iyio/react-native-lottie-builder";
-import { Animation, AnimationObject, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
+import { Animation, AnimationObject, asTextLayer, joinRemoveListeners, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
 import LottieView from "lottie-react-native";
 import KeepAwake from 'react-native-keep-awake';
 import * as fs from 'react-native-fs';
 import { useRef } from "react";
+import { useMemo } from "react";
 
 // test-af-lottie.aep exported using the Bodymovin extension
 const testLottie = () => require("./test-af-lottie.json");
@@ -31,6 +32,8 @@ export default function App() {
 
     const [view, setView] = useState<View | null>(null);
 
+    const [,render]=useState(0);
+
     const [an,setAn]=useState<Animation|null>(null);
     const [src,setSrc]=useState<AnimationObject|null>(null);
 
@@ -51,13 +54,21 @@ export default function App() {
             return;
         }
         setSrc(an.getAnimationObject());
-        return an.onSourceChange.addListener(()=>{
-            setSrc(an.getAnimationObject());
-        })
+        return joinRemoveListeners(
+
+            an.onSourceChange.addListener(()=>{
+                setSrc(an.getAnimationObject());
+            }),
+
+            an.onObjectChange.addListener(()=>{
+                render(v=>v+1);
+            })
+        )
     },[an])
 
     const [selectOffset,setSelectOffset]=useState<Point|null>(null);
     const [selectedLayer,setSelectedLayer]=useState<Layer|null>(null);
+    const textLayer=useMemo(()=>asTextLayer(selectedLayer),[selectedLayer]);
 
     const [viewportSize, setViewportSize] = useState<Size>({ width: 0, height: 0});
 
@@ -239,6 +250,9 @@ export default function App() {
     return (
         <View style={styles.flex1}>
             <KeepAwake/>
+            {textLayer&&<View style={[styles.row,{marginTop:60}]}>
+                <TextInput style={styles.textInput} value={textLayer.text} onChangeText={s=>textLayer.text=s} />
+            </View>}
             <View style={[
                 styles.flex1,
                 aspectRatio!=='fill'&&styles.center,
@@ -343,4 +357,11 @@ const styles = StyleSheet.create({
         width:100,
         height:200,
     },
+    textInput:{
+        flex:1,
+        borderColor:'#ddd',
+        borderWidth:1,
+        padding:10,
+        borderRadius:4
+    }
 });

@@ -17,4 +17,6 @@ export interface Accelerator{
     setLayerHighlight(layerIndex:number, enabled:boolean, color: string, weight: number):void;
 
     setLayerHidden(layerIndex:number,hidden:boolean):void;
+
+    setLayerText(layerIndex:number,text:string):void;
 }

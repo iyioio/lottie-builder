@@ -1,5 +1,5 @@
 import { Animation } from "./Animation";
-import { BlendMode, createRevPropMap, LayerType, MatteMode, Point, Point3D, PropertyMap, Size, Size3D, SourceObject } from "./common";
+import { BlendMode, createRevPropMap, LayerType, MatteMode, ObjectType, Point, Point3D, PropertyMap, Size, Size3D, SourceObject } from "./common";
 import { Node } from './Node';
 
 export function createLayer(an:Animation,source:SourceObject)
@@ -70,7 +70,7 @@ export const LayerRevPropMap=createRevPropMap(LayerPropMap);
 
 export class Layer extends Node{
 
-    private readonly an:Animation;
+    protected readonly an:Animation;
 
     public get type():LayerType|undefined{return this.getValue(LayerPropMap.type)}
     public set type(value:LayerType|undefined){this.setValue(LayerPropMap.type,value)}
@@ -142,7 +142,7 @@ export class Layer extends Node{
     }
     public set isHidden(value:boolean){
         this.setValue(LayerPropMap.isHidden,value?1:0);
-        this.an.accelerator?.setLayerHidden(this.an.layers?.indexOf(this)??-1,value);
+        this.an.accelerator?.setLayerHidden(this.getSourceIndex(),value);
     }
 
     public constructor(
@@ -153,6 +153,11 @@ export class Layer extends Node{
     {
         super(source,propMap,revPropMap);
         this.an=an;
+    }
+
+    protected getSourceIndex():number
+    {
+        return this.an.layers?.indexOf(this)??-1;
     }
 
     private getTransform():any
@@ -280,7 +285,7 @@ export class Layer extends Node{
 
     public setHighlighted(enabled:boolean)
     {
-        this.an.accelerator?.setLayerHighlight(this.an.layers?.indexOf(this)??-1,enabled,'#00ff00',5)
+        this.an.accelerator?.setLayerHighlight(this.getSourceIndex(),enabled,'#00ff00',5)
     }
 
 }
@@ -396,5 +401,72 @@ export class TextLayer extends Layer{
     {
         super(an,source,TextLayerPropMap,TextLayerRevPropMap);
     }
+
+    public static createTextData(text:string,size:number=36,font:string='Arial'):any
+    {
+        return {
+            "d": {
+                "k": [
+                    {
+                        "s": {
+                            "s": size,
+                            "f": font,
+                            "t": text,
+                            "j": 2,
+                            "tr": 0,
+                            "lh": 43.2,
+                            "ls": 0,
+                            "fc": [
+                                1,
+                                1,
+                                1
+                            ]
+                        },
+                        "t": 0
+                    }
+                ]
+            },
+            "p": {},
+            "m": {
+                "g": 1,
+                "a": {
+                    "a": 0,
+                    "k": [
+                        0,
+                        0
+                    ],
+                    "ix": 2
+                }
+            },
+            "a": []
+        }
+    }
+
+    private getData()
+    {
+        if(!this.source[TextLayerPropMap.textData.name]){
+            this.source[TextLayerPropMap.textData.name]=TextLayer.createTextData('Text')
+        }
+        return this.source[TextLayerPropMap.textData.name];
+    }
+
+    public get text():string
+    {
+        const data=this.getData();
+        return data.d.k[0].s.t;
+    }
+
+    public set text(value:string)
+    {
+        const data=this.getData();
+        data.d.k[0].s.t=value;
+        this.an.swapSource();
+    }
+
+}
+
+export function asTextLayer(layer:Layer|null|undefined):TextLayer|null
+{
+    return layer?.type===LayerType.TEXT?layer as TextLayer:null;
 
 }

@@ -1,8 +1,8 @@
 import { BlendMode, LayerType } from "@lottiefiles/lottie-js";
 import { Accelerator } from "./Accelerator";
 import { Asset } from "./Asset";
-import { createRevPropMap, newId, SourceObject } from "./common";
-import { createEvent, EventSource } from './Event';
+import { createRevPropMap, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
+import { createEvent, EventSource, EventSourceT } from './Event';
 import { createLayer, Layer, LayerPropMap } from "./Layer";
 import { Marker } from "./Marker";
 import { Meta } from "./Meta";
@@ -79,6 +79,9 @@ export class Animation extends Node
     private readonly onSourceChangeSrc:EventSource=createEvent();
     public get onSourceChange(){return this.onSourceChangeSrc.evt}
 
+    private readonly onObjectChangeSrc:EventSourceT<ObjectChangeListener>=createEvent();
+    public get onObjectChange(){return this.onObjectChangeSrc.evt}
+
     private get sourceLayers():SourceObject[]{return this.source.layers}
     private get sourceAssets():SourceObject[]{return this.source.assets}
 
@@ -109,6 +112,11 @@ export class Animation extends Node
         this.updateLayerLookup();
         this.updateAssetLookup();
 
+    }
+
+    public _triggerObjectChange(type:ObjectType, obj:any)
+    {
+        this.onObjectChangeSrc.trigger(type,obj);
     }
 
     public clone():Animation

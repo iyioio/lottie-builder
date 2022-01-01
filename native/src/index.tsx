@@ -163,6 +163,12 @@ export function setLayerHighlight(
     ReactNativeLottieBuilder.setLayerHighlight(tag,layerIndex,enabled,red,green,blue,alpha,weight);
 }
 
+/**
+ * Hides or shows a layer
+ * @param tag React native tag of a LottieView or a view that contains a LottieView
+ * @param layerIndex index of the layer
+ * @param hidden controls if the layer is to be hidden or not
+ */
 export function setLayerHidden(
     tag:number,
     layerIndex:number,
@@ -173,6 +179,24 @@ export function setLayerHidden(
     }
     assertNumbers(tag,layerIndex)
     ReactNativeLottieBuilder.setLayerHidden(tag,layerIndex,hidden?1:0);
+}
+
+/**
+ * Hides or shows a layer
+ * @param tag React native tag of a LottieView or a view that contains a LottieView
+ * @param layerIndex index of the layer
+ * @param hidden controls if the layer is to be hidden or not
+ */
+export function setLayerText(
+    tag:number,
+    layerIndex:number,
+    text:string)
+{
+    if(logNativeCalls){
+        console.debug('setLayerText',{tag,layerIndex,text})
+    }
+    assertNumbers(tag,layerIndex)
+    ReactNativeLottieBuilder.setLayerText(tag,layerIndex,text||'');
 }
 
 /**
@@ -240,6 +264,11 @@ export class LottieBuilderAccelerator implements Accelerator{
     public setLayerHidden(layerIndex:number,hidden:boolean)
     {
         return setLayerHidden(this.tag,layerIndex,hidden);
+    }
+
+    public setLayerText(layerIndex:number,text:string)
+    {
+        return setLayerText(this.tag,layerIndex,text);
     }
 }
 

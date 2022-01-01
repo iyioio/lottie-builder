@@ -48,4 +48,8 @@ RCT_EXTERN_METHOD(setLayerHidden:(NSNumber * _Nonnull)tag
                   layerIndex:(NSInteger)layerIndex
                   hidden:(NSInteger)hidden);
 
+RCT_EXTERN_METHOD(setLayerText:(NSNumber * _Nonnull)tag
+                  layerIndex:(NSInteger)layerIndex
+                  text:(NSString * _Nonnull)text);
+
 @end

@@ -232,6 +232,24 @@ class ReactNativeLottieBuilder: NSObject {
         }
     }
     
+    @objc(setLayerText:layerIndex:text:)
+    func setLayerText(_ tag:NSNumber, _ layerIndex:Int, _ text:String) -> Void
+    {
+        // not supported
+//        DispatchQueue.main.async {
+//
+//            guard
+//                let layer = self.getLayer(tag, layerIndex),
+//                let txt = self.findTextLayer(layer)
+//            else
+//            {
+//                return
+//            }
+//
+//            txt.text = text
+//        }
+    }
+    
     func getLayer(_ tag:NSNumber, _ layerIndex:Int) -> CALayer?
     {
             
@@ -256,7 +274,7 @@ class ReactNativeLottieBuilder: NSObject {
 
         return findAnimationViewSub(view)
     }
-
+    
     private func findAnimationViewSub(_ view:UIView)->AnimationView?
     {
 
@@ -274,4 +292,26 @@ class ReactNativeLottieBuilder: NSObject {
       return an;
 
     }
+    
+    // TextLayer from the Lottie framework needs to be public for this to work
+//    private func findTextLayer(_ layer:CALayer)->TextLayer?
+//    {
+//
+//        if let txt = layer as? TextLayer {
+//            return txt
+//        }
+//
+//        guard let subs = layer.sublayers else {
+//            return nil
+//        }
+//
+//        for sub in subs {
+//            if let txt = findTextLayer(sub) {
+//                return txt
+//            }
+//        }
+//
+//        return nil
+//
+//    }
 }

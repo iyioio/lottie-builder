@@ -1,3 +1,11 @@
+export enum ObjectType {
+    Animation = 0,
+    Layer = 1,
+    Asset = 2
+}
+
+export type ObjectChangeListener=(objType:ObjectType,obj:any)=>void;
+
 
 export enum BlendMode {
   NORMAL = 0,

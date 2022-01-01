@@ -1,6 +1,7 @@
 import { Animation } from "./Animation";
-import { BlendMode, convertToLottieColor, createRevPropMap, defaultTextColor, defaultTextFont, defaultTextSize, LayerType, MatteMode, ObjectType, Point, Point3D, PropertyMap, Size, Size3D, SourceObject } from "./common";
+import { BlendMode, convertToLottieColor, createRevPropMap, LayerType, MatteMode, ObjectType, Point, Point3D, PropertyMap, Size, Size3D, SourceObject } from "./common";
 import { Node } from './Node';
+import { createTextData } from "./Text";
 
 export function createLayer(an:Animation,source:SourceObject)
 {
@@ -402,51 +403,10 @@ export class TextLayer extends Layer{
         super(an,source,TextLayerPropMap,TextLayerRevPropMap);
     }
 
-    public static createTextData(
-        text:string,
-        size:number=defaultTextSize,
-        color:string=defaultTextColor,
-        font:string=defaultTextFont):any
-    {
-        const colorAry=convertToLottieColor(color);
-        return {
-            "d": {
-                "k": [
-                    {
-                        "s": {
-                            "s": size,
-                            "f": font,
-                            "t": text,
-                            "j": 2,
-                            "tr": 0,
-                            "lh": 43.2,
-                            "ls": 0,
-                            "fc": colorAry
-                        },
-                        "t": 0
-                    }
-                ]
-            },
-            "p": {},
-            "m": {
-                "g": 1,
-                "a": {
-                    "a": 0,
-                    "k": [
-                        0,
-                        0
-                    ],
-                    "ix": 2
-                }
-            },
-            "a": []
-        }
-    }
-
     private getData()
     {
         if(!this.source[TextLayerPropMap.textData.name]){
-            this.source[TextLayerPropMap.textData.name]=TextLayer.createTextData('Text')
+            this.source[TextLayerPropMap.textData.name]=createTextData({text:'Text'})
         }
         return this.source[TextLayerPropMap.textData.name];
     }

@@ -62,10 +62,6 @@ export type Point3D={x:number,y:number,z:number}
 
 export type ResizeMode = "cover" | "contain" | "center";
 
-export const defaultTextSize=36;
-export const defaultTextColor='#333333';
-export const defaultTextFont='Arial';
-
 export interface PropertyInfo
 {
     /**

@@ -242,12 +242,12 @@ export default function App() {
 
     // Adds a composition to the animation
     const addComp=useCallback((name:keyof typeof compositions)=>{
-        an?.importAnimation(compositions[name],name);
+        an?.addLottieLayer(name,compositions[name]);
     },[an]);
 
     // Adds a text layer to the animation
     const addText=useCallback((text:string)=>{
-        an?.addTextLayer(text,'text')
+        an?.addTextLayer('text',text)
     },[an]);
 
 

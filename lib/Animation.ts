@@ -1,12 +1,14 @@
 import { BlendMode, LayerType } from "@lottiefiles/lottie-js";
 import { Accelerator } from "./Accelerator";
 import { Asset } from "./Asset";
-import { createRevPropMap, defaultTextColor, defaultTextFont, defaultTextSize, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
+import { createRevPropMap, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
 import { createEvent, EventSource, EventSourceT } from './Event';
 import { createLayer, Layer, LayerPropMap, PrecompositionLayer, TextLayer, TextLayerPropMap } from "./Layer";
 import { Marker } from "./Marker";
 import { Meta } from "./Meta";
 import { Node } from './Node';
+import { createTextData, createTextDataFrom, TextDataOptions } from "./Text";
+import { createTransform, TransformOptions, TransformOptionsWithSize } from "./Transform";
 import { aryRemoveItem, cloneObj, deepCompare, KeyComparer } from "./util";
 
 /**
@@ -281,39 +283,32 @@ export class Animation extends Node
 
     /**
      * Adds a new text layer to the animation
-     * @param text Text to add
      * @param name Name of the layer to be added
-     * @param name The name the layer will be given
+     * @param text Text or text and format option for the text to add
+     * @param transform Transform options to apply to the layer
      * @param index The index which to insert the layer
-     * @param x The X position where to place the layer. If undefined the layer will be centered.
-     * @param y The Y position where to place the layer. If undefined the layer will be centered.
-     * @param size Font size
-     * @param color Font color
-     * @param font Font family
      * @returns 
      */
     public addTextLayer(
-        text:string,
         name:string,
+        text:TextDataOptions|string,
+        transform:TransformOptions={},
         index?:number,
-        x?:number,
-        y?:number,
-        size:number=defaultTextSize,
-        color:string=defaultTextColor,
-        font:string=defaultTextFont
     ):TextLayer{
 
-        const textData=TextLayer.createTextData(text,size,color,font);
+        const data=createTextDataFrom(text);
 
-        if(x===undefined){
-            x=(this.width||0)/2
+        transform={...transform}
+
+        if(transform.x===undefined){
+            transform.x=(this.width||0)/2
         }
-        if(y===undefined){
-            y=(this.height||0)/2
+        if(transform.y===undefined){
+            transform.y=(this.height||0)/2
         }
 
         const layerSource={
-            [TextLayerPropMap.textData.name]: textData,
+            [TextLayerPropMap.textData.name]: data,
             [LayerPropMap.is3D.name]: 0,
             [LayerPropMap.index.name]: 0,
             [LayerPropMap.type.name]: LayerType.TEXT,
@@ -324,45 +319,7 @@ export class Animation extends Node
             [LayerPropMap.outPoint.name]:this.outPoint,
             [LayerPropMap.startTime.name]: 0,
             [LayerPropMap.blendMode.name]: BlendMode.NORMAL,
-            [LayerPropMap.transform.name]: {
-                "o": {
-                    "a": 0,
-                    "k": 100,
-                    "ix": 11
-                },
-                "r": {
-                    "a": 0,
-                    "k": 0,
-                    "ix": 10
-                },
-                "p": {
-                    "a": 0,
-                    "k": [
-                        x,
-                        y,
-                        0
-                    ],
-                    "ix": 2
-                },
-                "a": {
-                    "a": 0,
-                    "k": [
-                        0,
-                        0,
-                        0
-                    ],
-                    "ix": 1
-                },
-                "s": {
-                    "a": 0,
-                    "k": [
-                        100,
-                        100,
-                        100
-                    ],
-                    "ix": 6
-                }
-            },
+            [LayerPropMap.transform.name]: createTransform(transform),
         }
 
         const layer=this.addLayer(layerSource,index) as TextLayer;
@@ -374,28 +331,20 @@ export class Animation extends Node
 
     /**
      * Imports a lottie file into this animation as a precomposition layer. The lottie file will
-     * be converted to an asset and a precomposition layer will be created the references the newly
+     * be converted to an asset and a precomposition layer will be created that references the newly
      * created asset. Assets of the lottie file will be merged with the assets of this animation
-     * and any duplicate assets will be mered.
-     * @param animation A lottie file. This object will be deeply cloned and not be mutated
+     * and any duplicate assets will be merged.
      * @param name The name the layer will be given
+     * @param animation A lottie file. This object will be deeply cloned and not be mutated
+     * @param transform Transform options to apply to the layer
      * @param index The index which to insert the layer
-     * @param x The X position where to place the layer. If undefined the layer will be centered.
-     * @param y The Y position where to place the layer. If undefined the layer will be centered.
-     * @param width The width to set to the layer to. If undefined the width of the lottie file will
-     *              be used
-     * @param height The height to set to the layer to. If undefined the height of the lottie file
-     *               will be used
      * @returns A PrecompositionLayer representing the imported lottie file
      */
-    public importAnimation(
-        animation:AnimationObject,
+    public addLottieLayer(
         name:string,
-        index?:number,
-        x?:number,
-        y?:number,
-        width?:number,
-        height?:number): PrecompositionLayer
+        animation:AnimationObject,
+        transform:TransformOptionsWithSize={},
+        index?:number): PrecompositionLayer
     {
         if(!animation.layers){
             throw new Error('source.layers expected')
@@ -403,17 +352,18 @@ export class Animation extends Node
 
         animation=cloneObj(animation);
 
-        if(x===undefined){
-            x=(this.width||0)/2
+        transform={...transform}
+        if(transform.x===undefined){
+            transform.x=(this.width||0)/2
         }
-        if(y===undefined){
-            y=(this.height||0)/2
+        if(transform.y===undefined){
+            transform.y=(this.height||0)/2
         }
-        if(width===undefined){
-            width=animation.w||100;
+        if(transform.width===undefined){
+            transform.width=animation.w||100;
         }
-        if(height===undefined){
-            height=animation.h||100;
+        if(transform.height===undefined){
+            transform.height=animation.h||100;
         }
 
         this.addAssets(animation,false);
@@ -438,51 +388,13 @@ export class Animation extends Node
             [LayerPropMap.refId.name]:comp.id,
             [LayerPropMap.startTime.name]:1,
             [LayerPropMap.autoOrient.name]:0,
-            [LayerPropMap.width.name]:width,
-            [LayerPropMap.height.name]:height,
+            [LayerPropMap.width.name]:transform.width,
+            [LayerPropMap.height.name]:transform.height,
             [LayerPropMap.inPoint.name]:this.isPoint,
             [LayerPropMap.outPoint.name]:this.outPoint,
             [LayerPropMap.startTime.name]:0,
             [LayerPropMap.blendMode.name]:BlendMode.NORMAL,
-            [LayerPropMap.transform.name]:{
-                "o":{
-                    "a":0,
-                    "k":100,
-                    "ix":11
-                },
-                "r":{
-                    "a":0,
-                    "k":0,
-                    "ix":10
-                },
-                "p":{
-                    "a":0,
-                    "k":[
-                        x,
-                        y,
-                        0
-                    ],
-                    "ix":2
-                },
-                "a":{
-                    "a":0,
-                    "k":[
-                        0,
-                        0,
-                        0
-                    ],
-                    "ix":1
-                },
-                "s":{
-                    "a":0,
-                    "k":[
-                        100,
-                        100,
-                        100
-                    ],
-                    "ix":6
-                }
-            }
+            [LayerPropMap.transform.name]:createTransform(transform),
         }
 
         if(!matchingComp){

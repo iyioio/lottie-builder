@@ -3,11 +3,27 @@ import { Accelerator } from "./Accelerator";
 import { Asset } from "./Asset";
 import { createRevPropMap, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
 import { createEvent, EventSource, EventSourceT } from './Event';
-import { createLayer, Layer, LayerPropMap } from "./Layer";
+import { createLayer, Layer, LayerPropMap, PrecompositionLayer } from "./Layer";
 import { Marker } from "./Marker";
 import { Meta } from "./Meta";
 import { Node } from './Node';
 import { aryRemoveItem, cloneObj, deepCompare, KeyComparer } from "./util";
+
+/**
+ * The shape of the root object of a lottie file
+ */
+export interface AnimationObject {
+    v:string;
+    fr:number;
+    ip:number;
+    op:number;
+    w:number;
+    h:number;
+    nm:string;
+    ddd:number;
+    assets:any[];
+    layers:any[];
+}
 
 export const AnimationPropMap={
     frameRate:{name:'fr'},
@@ -24,22 +40,23 @@ export const AnimationPropMap={
     meta:{name:'meta',wrapped:true},
 }
 
-export interface AnimationObject {
-    v: string;
-    fr: number;
-    ip: number;
-    op: number;
-    w: number;
-    h: number;
-    nm: string;
-    ddd: number;
-    assets: any[];
-    layers: any[];
-  }
 export const AnimationRevPropMap=createRevPropMap(AnimationPropMap);
 
+/**
+ * The Animation class represents a lottie file. The Animation class wraps a lottie JSON object.
+ * Lottie animations are After Effects composition exported using the bodymovin plugin.
+ * 
+ * Animations primary consists of layers and assets. Each layer represents a layer within an 
+ * After Effects composition. Each asset represents an asset within an After Effects project. By
+ * default all unused assets are removed from exported lottie files. Assets can also contain layers
+ * but the layers within assets are not wrapped by lottie-builder and are there for not mutable.
+ */
 export class Animation extends Node
 {
+    /**
+     * An object that is capable of interacting with a lottie file in native code. Accelerators 
+     * Make it possible to mutate a lottie file in real time without having to reload it's source.
+     */
     public readonly accelerator?:Accelerator;
 
     public get name():string|undefined{return this.getValue(AnimationPropMap.name)}
@@ -119,11 +136,18 @@ export class Animation extends Node
         this.onObjectChangeSrc.trigger(type,obj);
     }
 
+    /**
+     * Creates a deep clone of the animation
+     */
     public clone():Animation
     {
         return new Animation(this.getSource(),this.accelerator,true);
     }
 
+    /**
+     * Returns an optimized lottie file from the current state of the animation. All hidden
+     * layers of the exported animation and all unused assets are removed.
+     */
     public export():AnimationObject
     {
         const clone=this.clone();
@@ -131,6 +155,9 @@ export class Animation extends Node
         return clone.getAnimationObject();
     }
 
+    /**
+     * Returns an animation object that can be used as the source of a LottieView
+     */
     public getAnimationObject():AnimationObject
     {
         return this.getSource() as AnimationObject;
@@ -142,11 +169,21 @@ export class Animation extends Node
      /// Layers ///
     //////////////
 
+    /**
+     * Returns a layer by name. If multiple layers have the same name then the first matched layer
+     * is returned.
+     */
     public getLayer(name:string):Layer|null
     {
         return this.layerLookup[name]||null;
     }
 
+    /**
+     * Returns the top most layer at the given point. Hit testing is performed based on pixel opacity
+     * @param x X position
+     * @param y Y position
+     * @param radius The outwards radius from x and y to hit test
+     */
     public async getLayerAtPtAsync(x:number,y:number,radius:number=8):Promise<Layer|null>
     {
         if(!this.accelerator || !this.layers){
@@ -160,6 +197,15 @@ export class Animation extends Node
         return this.layers[index];
     }
 
+    /**
+     * Adds a layer to the animation.
+     * @param layerSource A layer source object. layerSource should use the same format as layers
+     *                    exported by the bodymovin plugin. This object will be mutated by changes
+     *                    to the returned Layer object.
+     * @param index The index which to insert the layer at
+     * @param triggerSourceChange If true a SourceChange event will be triggered
+     * @returns A Layer object warping the given sourceLayer
+     */
     public addLayer(layerSource:SourceObject, index:number=0, triggerSourceChange=true):Layer
     {
 
@@ -182,7 +228,15 @@ export class Animation extends Node
         return layer;
     }
 
-    public removeLayer(layer:Layer, triggerSourceChange=true):boolean
+    /**
+     * Removes the given layer from the animation. 
+     * @param layer The layer to remove
+     * @param removeUnusedAssets If true any assets that are exclusively used by the given
+     *                           layer will be removed.
+     * @returns Returns true if the layer was removed. If the given layer is not part of the
+     *          animation false is returned.
+     */
+    public removeLayer(layer:Layer, removeUnusedAssets:boolean=true, triggerSourceChange=true):boolean
     {
         const layerSource=layer.getSource();
         if(!aryRemoveItem(this.sourceLayers,layerSource)){
@@ -191,7 +245,7 @@ export class Animation extends Node
 
         aryRemoveItem(this.layers,layer);
 
-        if(layerSource.refId){
+        if(layerSource.refId && removeUnusedAssets){
             const count=this.getAssetRefCount(layerSource.refId);
             if(!count){
                 this.removeAsset(layerSource.refId,false);
@@ -208,6 +262,10 @@ export class Animation extends Node
         return true;
     }
 
+    /**
+     * Removes all hidden layers
+     * @returns The number of layers removed
+     */
     public removeHiddenLayers():number
     {
         const layers=this.layers.filter(l=>l.isHidden);
@@ -215,21 +273,36 @@ export class Animation extends Node
             return 0;
         }
         for(const l of layers){
-            this.removeLayer(l,false);
+            this.removeLayer(l,true,false);
         }
         this.swapSource();
         return layers.length;
     }
 
-    public addPrecomposition(
-        animation:SourceObject,
-        sourceId:string,
+    /**
+     * Imports a lottie file into this animation as a precomposition layer. The lottie file will
+     * be converted to an asset and a precomposition layer will be created the references the newly
+     * created asset. Assets of the lottie file will be merged with the assets of this animation
+     * and any duplicate assets will be mered.
+     * @param animation A lottie file. This object will be deeply cloned and not be mutated
+     * @param name The name the layer will be given
+     * @param index The index which to insert the layer
+     * @param x The X position where to place the layer. If undefined the layer will be centered.
+     * @param y The Y position where to place the layer. If undefined the layer will be centered.
+     * @param width The width to set to the layer to. If undefined the width of the lottie file will
+     *              be used
+     * @param height The height to set to the layer to. If undefined the height of the lottie file
+     *               will be used
+     * @returns A PrecompositionLayer representing the imported lottie file
+     */
+    public importAnimation(
+        animation:AnimationObject,
         name:string,
         index?:number,
         x?:number,
         y?:number,
         width?:number,
-        height?:number): Layer
+        height?:number): PrecompositionLayer
     {
         if(!animation.layers){
             throw new Error('source.layers expected')
@@ -244,13 +317,13 @@ export class Animation extends Node
             y=(this.height||0)/2
         }
         if(width===undefined){
-            width=animation[AnimationPropMap.width.name]||100;
+            width=animation.w||100;
         }
         if(height===undefined){
-            height=animation[AnimationPropMap.height.name]||100;
+            height=animation.h||100;
         }
 
-        this.addAssets(animation,sourceId,false);
+        this.addAssets(animation,false);
 
         name=this.getUniqueLayerName(name);
 
@@ -323,13 +396,16 @@ export class Animation extends Node
             this.addAsset(comp,false);
         }
 
-        const layer=this.addLayer(layerSource,index);
+        const layer=this.addLayer(layerSource,index) as PrecompositionLayer;
 
         this.swapSource();
 
         return layer;
     }
 
+    /**
+     * Sets the index of the given layer
+     */
     public setLayerIndex(layer:Layer, index:number): boolean
     {
         const current=this.layers.indexOf(layer);
@@ -400,11 +476,17 @@ export class Animation extends Node
      /// Assets ///
     //////////////
 
+    /**
+     * Returns an asset by id
+     */
     public getAsset(id:string):Asset|null
     {
         return this.assetLookup[id]||null;
     }
 
+    /**
+     * Adds a new asset to the animation
+     */
     public addAsset(assetSource:SourceObject, triggerSourceChange=true)
     {
         if(!this.source.assets){
@@ -420,6 +502,10 @@ export class Animation extends Node
         return asset;
     }
 
+    /**
+     * Removes an asset by id
+     * @returns 
+     */
     public removeAsset(id:string, triggerSourceChange=true):boolean
     {
 
@@ -511,7 +597,7 @@ export class Animation extends Node
         return null;
     }
 
-    private remapLayerRefs(layers:SourceObject[], id:string, newId:string, sourceId:string)
+    private remapLayerRefs(layers:SourceObject[], id:string, newId:string)
     {
         for(const l of layers){
             if(l.refId===id){
@@ -565,7 +651,7 @@ export class Animation extends Node
      * asset ids. Duplicate assets will be merged.
      * @param animation 
      */
-    private addAssets(animation:SourceObject, sourceId:string, triggerSourceChange=true)
+    private addAssets(animation:SourceObject, triggerSourceChange=true)
     {
         const assets=animation.assets;
         if(!assets?.length){
@@ -588,11 +674,11 @@ export class Animation extends Node
                     const newId=match?.id||this.getUniqueAssetId(id);
                     a.id=newId;
                     if(layers){
-                        this.remapLayerRefs(layers,id,newId,sourceId);
+                        this.remapLayerRefs(layers,id,newId);
                     }
                     for(const layerAsset of assets){
                         if(layerAsset.layers){
-                            this.remapLayerRefs(layerAsset.layers,id,newId,sourceId);
+                            this.remapLayerRefs(layerAsset.layers,id,newId);
                         }
                     }
                 }

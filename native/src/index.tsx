@@ -3,6 +3,9 @@ import type { Size, Accelerator } from '@iyio/lottie-builder';
 
 let logNativeCalls=false;
 
+/**
+ * When enabled all native class will be logged using console.debug
+ */
 export function setLogNativeCalls(enabled:boolean)
 {
     logNativeCalls=enabled;

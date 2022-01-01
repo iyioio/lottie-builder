@@ -242,7 +242,7 @@ export default function App() {
 
     // Adds a composition to the animation
     const addComp=useCallback((name:keyof typeof compositions)=>{
-        an?.addPrecomposition(compositions[name],name,name);
+        an?.importAnimation(compositions[name],name);
     },[an]);
 
 

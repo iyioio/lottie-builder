@@ -1,9 +1,10 @@
-import { Animation } from "./Animation";
+import { Composition } from "./Composition";
 import { BlendMode, convertToLottieColor, createRevPropMap, LayerType, MatteMode, ObjectType, Point, Point3D, PropertyMap, Size, Size3D, SourceObject } from "./common";
 import { Node } from './Node';
 import { createTextData } from "./Text";
+import { createTransform, TransformSource } from "./Transform";
 
-export function createLayer(an:Animation,source:SourceObject)
+export function createLayer(an:Composition,source:SourceObject)
 {
     const type:LayerType=source[LayerPropMap.type.name];
     switch(type){
@@ -71,7 +72,7 @@ export const LayerRevPropMap=createRevPropMap(LayerPropMap);
 
 export class Layer extends Node{
 
-    protected readonly an:Animation;
+    protected readonly comp:Composition;
 
     public get type():LayerType|undefined{return this.getValue(LayerPropMap.type)}
     public set type(value:LayerType|undefined){this.setValue(LayerPropMap.type,value)}
@@ -124,8 +125,8 @@ export class Layer extends Node{
     public get matchName():string|undefined{return this.getValue(LayerPropMap.matchName)}
     public set matchName(value:string|undefined){this.setValue(LayerPropMap.matchName,value)}
 
-    public get transform():any|undefined{return this.getValue(LayerPropMap.transform)}
-    public set transform(value:any|undefined){this.setValue(LayerPropMap.transform,value)}
+    public get transform():TransformSource|undefined{return this.getValue(LayerPropMap.transform)}
+    public set transform(value:any|TransformSource){this.setValue(LayerPropMap.transform,value)}
 
 
 
@@ -133,7 +134,7 @@ export class Layer extends Node{
         return this.getValue(LayerPropMap.index)||0;
     }
     public set index(value:number){
-        this.an.setLayerIndex(this,value);
+        this.comp.setLayerIndex(this,value);
     }
 
 
@@ -143,35 +144,35 @@ export class Layer extends Node{
     }
     public set isHidden(value:boolean){
         this.setValue(LayerPropMap.isHidden,value?1:0);
-        this.an.accelerator?.setLayerHidden(this.getSourceIndex(),value);
+        this.comp.acc?.setLayerHidden(this.getSourceIndex(),value);
     }
 
     public constructor(
-        an:Animation,
+        an:Composition,
         source:SourceObject,
         propMap:PropertyMap=LayerPropMap,
         revPropMap:PropertyMap=LayerRevPropMap)
     {
         super(source,propMap,revPropMap);
-        this.an=an;
+        this.comp=an;
     }
 
     protected getSourceIndex():number
     {
-        return this.an.layers?.indexOf(this)??-1;
+        return this.comp.layers?.indexOf(this)??-1;
     }
 
     private getTransform():any
     {
         let trans=this.transform;
         if(!trans){
-            trans={}
+            trans=createTransform({});
             this.transform=trans;
         }
 
         // scale
         if(!trans.s){
-            trans.s={}
+            trans.s=createTransform({}).s;
         }
         if(!trans.s.k){
             trans.s.k=[100,100,100]
@@ -179,7 +180,7 @@ export class Layer extends Node{
 
         // position
         if(!trans.p){
-            trans.p={}
+            trans.p=createTransform({}).p;
         }
         if(!trans.p.k){
             trans.p.k=[0,0,0]
@@ -187,21 +188,21 @@ export class Layer extends Node{
 
         // rotation
         if(!trans.r){
-            trans.r={}
+            trans.r=createTransform({}).r;
         }
-        if(!trans.p.r===undefined){
-            trans.p.r=0;
+        if(!trans.r.k===undefined){
+            trans.r.k=0;
         }
 
         return trans;
     }
 
     /**
-     * Removes the layer from it's parent animation
+     * Removes the layer from it's parent composition
      */
     public remove()
     {
-        this.an.removeLayer(this);
+        this.comp.removeLayer(this);
     }
 
     public setScale(scale:number)
@@ -220,7 +221,7 @@ export class Layer extends Node{
         const trans=this.getTransform();
 
         trans.s.k=[scaleX*100,scaleY*100,scaleZ*100];
-        this.an.accelerator?.setSize(`${this.name}.Transform.Scale`,scaleX*100,scaleY*100);
+        this.comp.acc?.setSize(`${this.name}.Transform.Scale`,scaleX*100,scaleY*100);
     }
 
     /**
@@ -259,7 +260,7 @@ export class Layer extends Node{
     {
         const trans=this.getTransform();
         trans.p.k=[x,y,z];
-        this.an.accelerator?.setPoint(`${this.name}.Transform.Position`,x,y);
+        this.comp.acc?.setPoint(`${this.name}.Transform.Position`,x,y);
     }
 
     public getPosition():Point{
@@ -275,7 +276,7 @@ export class Layer extends Node{
     {
         const trans=this.getTransform();
         trans.r.k=deg
-        this.an.accelerator?.setFloat(`${this.name}.Transform.Rotation`,deg);
+        this.comp.acc?.setFloat(`${this.name}.Transform.Rotation`,deg);
     }
 
     public getRotation():number
@@ -286,7 +287,7 @@ export class Layer extends Node{
 
     public setHighlighted(enabled:boolean)
     {
-        this.an.accelerator?.setLayerHighlight(this.getSourceIndex(),enabled,'#00ff00',5)
+        this.comp.acc?.setLayerHighlight(this.getSourceIndex(),enabled,'#00ff00',5)
     }
 
 }
@@ -298,7 +299,7 @@ export const GroupLayerRevPropMap=createRevPropMap(GroupLayerPropMap);
 
 export class GroupLayer extends Layer{
 
-    public constructor(an:Animation,source:SourceObject)
+    public constructor(an:Composition,source:SourceObject)
     {
         super(an,source,GroupLayerPropMap,GroupLayerRevPropMap);
     }
@@ -315,7 +316,7 @@ export class ImageLayer extends Layer{
     public get refId():string|undefined{return this.getValue(ImageLayerPropMap.refId)}
     public set refId(value:string|undefined){this.setValue(ImageLayerPropMap.refId,value)}
 
-    public constructor(an:Animation,source:SourceObject)
+    public constructor(an:Composition,source:SourceObject)
     {
         super(an,source,ImageLayerPropMap,ImageLayerRevPropMap);
     }
@@ -336,7 +337,7 @@ export class PrecompositionLayer extends Layer{
     public get timeRemap():any|undefined{return this.getValue(PrecompositionLayerPropMap.timeRemap)}
     public set timeRemap(value:any|undefined){this.setValue(PrecompositionLayerPropMap.timeRemap,value)}
 
-    public constructor(an:Animation,source:SourceObject)
+    public constructor(an:Composition,source:SourceObject)
     {
         super(an,source,PrecompositionLayerPropMap,PrecompositionLayerRevPropMap);
     }
@@ -354,7 +355,7 @@ export class ShapeLayer extends Layer{
     public get shapes():any|undefined{return this.getValue(ShapeLayerPropMap.shapes)}
     public set shapes(value:any|undefined){this.setValue(ShapeLayerPropMap.shapes,value)}
 
-    public constructor(an:Animation,source:SourceObject)
+    public constructor(an:Composition,source:SourceObject)
     {
         super(an,source,ShapeLayerPropMap,ShapeLayerRevPropMap);
     }
@@ -380,7 +381,7 @@ export class SolidLayer extends Layer{
     public get solidWidth():number|undefined{return this.getValue(SolidLayerPropMap.solidWidth)}
     public set solidWidth(value:number|undefined){this.setValue(SolidLayerPropMap.solidWidth,value)}
 
-    public constructor(an:Animation,source:SourceObject)
+    public constructor(an:Composition,source:SourceObject)
     {
         super(an,source,SolidLayerPropMap,SolidLayerRevPropMap);
     }
@@ -398,7 +399,7 @@ export class TextLayer extends Layer{
     public get textData():any|undefined{return this.getValue(TextLayerPropMap.textData)}
     public set textData(value:any|undefined){this.setValue(TextLayerPropMap.textData,value)}
 
-    public constructor(an:Animation,source:SourceObject)
+    public constructor(an:Composition,source:SourceObject)
     {
         super(an,source,TextLayerPropMap,TextLayerRevPropMap);
     }
@@ -421,7 +422,7 @@ export class TextLayer extends Layer{
     {
         const data=this.getData();
         data.d.k[0].s.t=value;
-        this.an.swapSource();
+        this.comp.acc.setLayerText(this.getSourceIndex(),value);
     }
 
 }

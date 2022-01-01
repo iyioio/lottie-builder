@@ -90,20 +90,20 @@ class ReactNativeLottieBuilder: NSObject {
             resolve(["width":size.width,"height":size.height])
         }
     }
-    
+
     private var lastHit: CALayer?
-    
+
     private func toViewCords(_ anView:AnimationView, _ _x: CGFloat, _ _y: CGFloat) -> CGPoint?
     {
         guard let size = anView.animation?.size else {
             return nil
         }
-        
+
         let frame=anView.frame
         let aAr=size.width/size.height
         let vAr=frame.width/frame.height
-        
-        
+
+
         if vAr < aAr { // view is taller than animation
             let scale=frame.width/size.width
             let x = _x * scale
@@ -116,7 +116,7 @@ class ReactNativeLottieBuilder: NSObject {
             return CGPoint(x: x, y: y)
         }
     }
-    
+
     private static let maxHitTestRadius=100
     private let pixels = UnsafeMutablePointer<CUnsignedChar>.allocate(capacity:maxHitTestRadius*2*maxHitTestRadius*2*4)
     private let colorSpace = CGColorSpaceCreateDeviceRGB()
@@ -125,17 +125,17 @@ class ReactNativeLottieBuilder: NSObject {
     private var contextRadius : Int = -1
     private var contextTransX:CGFloat = 0
     private var contextTransY:CGFloat = 0
-    
+
     // Returns the alpha value of the of the most opace pixel at the given point and radius
     private func getAlpha(_ layer:CALayer, _ point:CGPoint, _ radius:Int) -> CGFloat?
     {
         let r:Int = radius < 0 ? 0 :
             ( radius > ReactNativeLottieBuilder.maxHitTestRadius ? ReactNativeLottieBuilder.maxHitTestRadius : radius )
-        
+
         let dm=r*2
-        
+
         self.pixels.initialize(repeating: 0, count: dm*dm*4)
-        
+
         if _context == nil || contextRadius != r {
             contextRadius = r
             let colorSpace = CGColorSpaceCreateDeviceRGB()
@@ -149,7 +149,7 @@ class ReactNativeLottieBuilder: NSObject {
                 space: colorSpace,
                 bitmapInfo: bitmapInfo.rawValue)
         }
-        
+
         guard let context = _context else
         {
             return nil
@@ -162,11 +162,11 @@ class ReactNativeLottieBuilder: NSObject {
         layer.render(in: context)
 
         var alpha:CGFloat = 0
-        
+
         //let alpha=CGFloat(pixels[3])/255.0
-        
+
         let rd=Double(r)
-        
+
         for xp in 0...dm {
             let xr=Double(r-xp)
             for yp in 0...dm {
@@ -184,8 +184,8 @@ class ReactNativeLottieBuilder: NSObject {
         return alpha
     }
 
-    @objc(getLayerIndexAtPt:x:y:radius:withResolver:withRejecter:)
-    func getLayerIndexAtPt(_ tag:NSNumber, x:CGFloat, y:CGFloat, radius: Int,
+    @objc(hitTestLayerAtPt:x:y:radius:withResolver:withRejecter:)
+    func hitTestLayerAtPt(_ tag:NSNumber, x:CGFloat, y:CGFloat, radius: Int,
                       resolve:@escaping RCTPromiseResolveBlock,  reject:@escaping RCTPromiseRejectBlock)->Void
     {
         DispatchQueue.main.async {
@@ -207,7 +207,7 @@ class ReactNativeLottieBuilder: NSObject {
                 let converted = layer.convert(pt, from: anView.layer)
                 if let alpha = self.getAlpha(layer,converted,radius) {
                     //print("color[\(i)] = \(alpha)")
-                    
+
                     if(alpha > 0){
                         resolve(["index":layers.count-1-i])
                         return
@@ -219,17 +219,17 @@ class ReactNativeLottieBuilder: NSObject {
             resolve(["index":i])
         }
     }
-    
+
     @objc(setLayerHighlight:layerIndex:enabled:red:green:blue:alpha:weight:)
     func setLayerHighlight(_ tag:NSNumber, _ layerIndex:Int, _ enabled:Int, r:CGFloat, g:CGFloat, b:CGFloat, a:CGFloat, weight:CGFloat) -> Void
     {
         DispatchQueue.main.async {
-            
+
             guard let layer = self.getLayer(tag, layerIndex) else
             {
                 return
             }
-            
+
             if enabled == 0 {
                 layer.shadowColor = nil
                 layer.shadowOpacity=0
@@ -241,21 +241,21 @@ class ReactNativeLottieBuilder: NSObject {
             }
         }
     }
-    
+
     @objc(setLayerHidden:layerIndex:hidden:)
     func setLayerHidden(_ tag:NSNumber, _ layerIndex:Int, _ hidden:Int) -> Void
     {
         DispatchQueue.main.async {
-            
+
             guard let layer = self.getLayer(tag, layerIndex) else
             {
                 return
             }
-            
+
             layer.isHidden = hidden != 0
         }
     }
-    
+
     @objc(setLayerText:layerIndex:text:)
     func setLayerText(_ tag:NSNumber, _ layerIndex:Int, _ text:String) -> Void
     {
@@ -273,10 +273,10 @@ class ReactNativeLottieBuilder: NSObject {
 //            txt.text = text
 //        }
     }
-    
+
     func getLayer(_ tag:NSNumber, _ layerIndex:Int) -> CALayer?
     {
-            
+
         guard let anView = self.findAnimationView(tag),
               let lc = anView.layer.sublayers?.count,
               let layers = lc == 0 ? nil : anView.layer.sublayers?[0].sublayers,
@@ -284,11 +284,11 @@ class ReactNativeLottieBuilder: NSObject {
         {
             return nil
         }
-        
+
         return layers[layers.count-1-layerIndex]
     }
-    
-    
+
+
 
     private func findAnimationView(_ tag:NSNumber)->AnimationView?
     {
@@ -298,7 +298,7 @@ class ReactNativeLottieBuilder: NSObject {
 
         return findAnimationViewSub(view)
     }
-    
+
     private func findAnimationViewSub(_ view:UIView)->AnimationView?
     {
 
@@ -316,7 +316,7 @@ class ReactNativeLottieBuilder: NSObject {
       return an;
 
     }
-    
+
     // TextLayer from the Lottie framework needs to be public for this to work
 //    private func findTextLayer(_ layer:CALayer)->TextLayer?
 //    {

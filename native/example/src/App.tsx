@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Animated, Button, GestureResponderEvent, StyleSheet, Text, TextInput, View } from "react-native";
-import { LottieBuilderAccelerator } from "@iyio/react-native-lottie-builder";
-import { Animation, AnimationObject, asTextLayer, joinRemoveListeners, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
+import { ReactNativeAccelerator } from "@iyio/react-native-lottie-builder";
+import { Composition, AnimationObject, asTextLayer, joinRemoveListeners, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
 import LottieView from "lottie-react-native";
 import KeepAwake from 'react-native-keep-awake';
 import * as fs from 'react-native-fs';
@@ -34,7 +34,7 @@ export default function App() {
 
     const [,render]=useState(0);
 
-    const [an,setAn]=useState<Animation|null>(null);
+    const [an,setAn]=useState<Composition|null>(null);
     const [src,setSrc]=useState<AnimationObject|null>(null);
 
     // Loads the test-af-lottie.json file
@@ -42,7 +42,7 @@ export default function App() {
         if(!view){
             return;
         }
-        setAn(new Animation(testLottie(),new LottieBuilderAccelerator(view)));
+        setAn(new Composition(testLottie(),new ReactNativeAccelerator(view)));
     },[view])
 
     useEffect(() =>{
@@ -72,27 +72,11 @@ export default function App() {
 
     const [viewportSize, setViewportSize] = useState<Size>({ width: 0, height: 0});
 
-    const [compSize, setCompSize] = useState<Size>({ width: 0, height: 0});
+    const compSize=useMemo(()=>an?{width:an.width,height:an.height}:{width:0,height:0},[an])
 
     const [resizeMode,setResizeMode] = useState<ResizeMode>('contain');
 
     const [aspectRatio,setAspectRatio] = useState<'fill'|'2:1'|'1:2'>('fill');
-
-    // Get the size of the loaded composition
-    useEffect(()=>{
-        const ac=an?.accelerator;
-        if(!ac){
-            return;
-        }
-        let m=true;
-        (async ()=>{
-            const size=await ac?.getCompositionSizeAsync();
-            if(m){
-                setCompSize(size);
-            }
-        })();
-        return ()=>{m=false;};
-    },[an]);
 
     // Shrink and grow MyStar using an interval
     useEffect(()=>{
@@ -141,7 +125,7 @@ export default function App() {
             compSize,
             resizeMode);
 
-        const layer=await an.getLayerAtPtAsync(pt.x,pt.y);
+        const layer=await an.hitTestLayerAtPtAsync(pt.x,pt.y);
         setSelectedLayer(current=>{
             if(current){
                 current.setHighlighted(false);
@@ -183,7 +167,7 @@ export default function App() {
         if(!an || !selectedLayer){
             return;
         }
-        an.accelerator?.setColor(selectedLayer.name+".**.Fill 1.Color",color);
+        an.acc.setColor(selectedLayer.name+".**.Fill 1.Color",color);
     },[an,selectedLayer]);
 
 
@@ -237,7 +221,7 @@ export default function App() {
             return;
         }
         const json=await fs.readFile(`${fs.DocumentDirectoryPath}/animation.json`);
-        setAn(new Animation(JSON.parse(json),new LottieBuilderAccelerator(view)));
+        setAn(new Composition(JSON.parse(json),new ReactNativeAccelerator(view)));
     },[view]);
 
     // Adds a composition to the animation

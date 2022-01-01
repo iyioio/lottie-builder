@@ -134,13 +134,13 @@ export async function getCompositionSizeAsync(
  * @param y Y position
  * @param radius radius of the hit test area to use
  */
-export async function getLayerIndexAtPtAsync(tag:number,x:number,y:number,radius:number):Promise<number>
+export async function hitTestLayerAtPtAsync(tag:number,x:number,y:number,radius:number):Promise<number>
 {
     if(logNativeCalls){
         console.debug('getLayerIndexAtPt',{tag,x,y,radius})
     }
     assertNumbers(tag,x,y,radius)
-    const r=await ReactNativeLottieBuilder.getLayerIndexAtPt(tag,x,y,radius);
+    const r=await ReactNativeLottieBuilder.hitTestLayerAtPt(tag,x,y,radius);
     return r?r.index:-1;
 }
 
@@ -204,11 +204,9 @@ export function setLayerText(
 }
 
 /**
- * Can be used as an accelerator for the lottie-builder package. Without an accelerator lottie-builder
- * regenerates the full AnimationView of a LottieView for every property change which is very bad
- * for transforming objects in real time.
+ * A lottie-builder accelerator for ReactNative
  */
-export class LottieBuilderAccelerator implements Accelerator{
+export class ReactNativeAccelerator implements Accelerator{
 
     private readonly tag:number;
 
@@ -250,9 +248,9 @@ export class LottieBuilderAccelerator implements Accelerator{
         return getCompositionSizeAsync(this.tag);
     }
 
-    public getLayerIndexAtPtAsync(x:number,y:number,radius:number):Promise<number>
+    public hitTestLayerAtPtAsync(x:number,y:number,radius:number):Promise<number>
     {
-        return getLayerIndexAtPtAsync(this.tag,x,y,radius);
+        return hitTestLayerAtPtAsync(this.tag,x,y,radius);
     }
 
     public setLayerHighlight(
@@ -268,11 +266,6 @@ export class LottieBuilderAccelerator implements Accelerator{
     public setLayerHidden(layerIndex:number,hidden:boolean)
     {
         return setLayerHidden(this.tag,layerIndex,hidden);
-    }
-
-    public setLayerText(layerIndex:number,text:string)
-    {
-        return setLayerText(this.tag,layerIndex,text);
     }
 }
 

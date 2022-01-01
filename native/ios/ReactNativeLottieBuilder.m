@@ -29,7 +29,7 @@ RCT_EXTERN_METHOD(getCompositionSize:(NSNumber * _Nonnull)tag
                   withResolver:(RCTPromiseResolveBlock)resolve
                   withRejecter:(RCTPromiseRejectBlock)reject);
 
-RCT_EXTERN_METHOD(getLayerIndexAtPt:(NSNumber * _Nonnull)tag
+RCT_EXTERN_METHOD(hitTestLayerAtPt:(NSNumber * _Nonnull)tag
                   x:(CGFloat)x
                   y:(CGFloat)y
                   radius:(NSInteger)radius

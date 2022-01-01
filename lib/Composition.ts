@@ -1,5 +1,5 @@
 import { BlendMode, LayerType } from "@lottiefiles/lottie-js";
-import { Accelerator } from "./Accelerator";
+import { Accelerator, FallbackAccelerator } from "./Accelerator";
 import { Asset } from "./Asset";
 import { createRevPropMap, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
 import { createEvent, EventSource, EventSourceT } from './Event';
@@ -7,7 +7,7 @@ import { createLayer, Layer, LayerPropMap, PrecompositionLayer, TextLayer, TextL
 import { Marker } from "./Marker";
 import { Meta } from "./Meta";
 import { Node } from './Node';
-import { createTextData, createTextDataFrom, TextDataOptions } from "./Text";
+import { createTextDataFrom, TextDataOptions } from "./Text";
 import { createTransform, TransformOptions, TransformOptionsWithSize } from "./Transform";
 import { aryRemoveItem, cloneObj, deepCompare, KeyComparer } from "./util";
 
@@ -23,11 +23,11 @@ export interface AnimationObject {
     h:number;
     nm:string;
     ddd:number;
-    assets:any[];
-    layers:any[];
+    assets:SourceObject[];
+    layers:SourceObject[];
 }
 
-export const AnimationPropMap={
+export const CompositionPropMap={
     frameRate:{name:'fr'},
     height:{name:'h'},
     isPoint:{name:'ip'},
@@ -42,48 +42,45 @@ export const AnimationPropMap={
     meta:{name:'meta',wrapped:true},
 }
 
-export const AnimationRevPropMap=createRevPropMap(AnimationPropMap);
+export const CompositionRevPropMap=createRevPropMap(CompositionPropMap);
 
 /**
- * The Animation class represents a lottie file. The Animation class wraps a lottie JSON object.
- * Lottie animations are After Effects composition exported using the bodymovin plugin.
+ * The Composition class represents an After Effects composition and wraps a lottie file JSON object.
+ * Lottie files are After Effects composition exported using the bodymovin plugin.
  * 
- * Animations primary consists of layers and assets. Each layer represents a layer within an 
- * After Effects composition. Each asset represents an asset within an After Effects project. By
- * default all unused assets are removed from exported lottie files. Assets can also contain layers
+ * Compositions primary consists of layers and assets. By default all unused assets and hidden
+ * layers are removed from exported lottie files. Assets can also contain layers
  * but the layers within assets are not wrapped by lottie-builder and are there for not mutable.
  */
-export class Animation extends Node
+export class Composition extends Node
 {
     /**
-     * An object that is capable of interacting with a lottie file in native code. Accelerators 
-     * Make it possible to mutate a lottie file in real time without having to reload it's source.
+     * An object that is capable of interacting with a lottie file at a native level. Accelerators 
+     * Make it possible to mutate a lottie file in real time without the need to reload it's source.
      */
-    public readonly accelerator?:Accelerator;
+    public readonly acc:FallbackAccelerator;
 
-    public get name():string|undefined{return this.getValue(AnimationPropMap.name)}
-    public set name(value:string|undefined){this.setValue(AnimationPropMap.name,value)}
+    public get name():string|undefined{return this.getValue(CompositionPropMap.name)}
+    public set name(value:string|undefined){this.setValue(CompositionPropMap.name,value)}
 
-    public get width():number|undefined{return this.getValue(AnimationPropMap.width)}
-    public set width(value:number|undefined){this.setValue(AnimationPropMap.width,value)}
+    public get width():number{return this.getValue(CompositionPropMap.width)||0}
 
-    public get height():number|undefined{return this.getValue(AnimationPropMap.height)}
-    public set height(value:number|undefined){this.setValue(AnimationPropMap.height,value)}
+    public get height():number{return this.getValue(CompositionPropMap.height)||0}
 
-    public get frameRate():number|undefined{return this.getValue(AnimationPropMap.frameRate)}
-    public set frameRate(value:number|undefined){this.setValue(AnimationPropMap.frameRate,value)}
+    public get frameRate():number|undefined{return this.getValue(CompositionPropMap.frameRate)}
+    public set frameRate(value:number|undefined){this.setValue(CompositionPropMap.frameRate,value)}
 
-    public get isPoint():number|undefined{return this.getValue(AnimationPropMap.isPoint)}
-    public set isPoint(value:number|undefined){this.setValue(AnimationPropMap.isPoint,value)}
+    public get isPoint():number|undefined{return this.getValue(CompositionPropMap.isPoint)}
+    public set isPoint(value:number|undefined){this.setValue(CompositionPropMap.isPoint,value)}
 
-    public get is3D():boolean|undefined{return this.getValue(AnimationPropMap.is3D)}
-    public set is3D(value:boolean|undefined){this.setValue(AnimationPropMap.is3D,value)}
+    public get is3D():boolean|undefined{return this.getValue(CompositionPropMap.is3D)}
+    public set is3D(value:boolean|undefined){this.setValue(CompositionPropMap.is3D,value)}
 
-    public get outPoint():number|undefined{return this.getValue(AnimationPropMap.outPoint)}
-    public set outPoint(value:number|undefined){this.setValue(AnimationPropMap.outPoint,value)}
+    public get outPoint():number|undefined{return this.getValue(CompositionPropMap.outPoint)}
+    public set outPoint(value:number|undefined){this.setValue(CompositionPropMap.outPoint,value)}
 
-    public get version():string|undefined{return this.getValue(AnimationPropMap.version)}
-    public set version(value:string|undefined){this.setValue(AnimationPropMap.version,value)}
+    public get version():string|undefined{return this.getValue(CompositionPropMap.version)}
+    public set version(value:string|undefined){this.setValue(CompositionPropMap.version,value)}
 
     private layerLookup:{[name:string]:Layer}={}
     public readonly layers:Layer[];
@@ -111,8 +108,8 @@ export class Animation extends Node
     {
         super(
             cloneSource?source=cloneObj(source):source,
-            AnimationPropMap,
-            AnimationRevPropMap);
+            CompositionPropMap,
+            CompositionRevPropMap);
 
         if(!source.layers){
             source.layers=[];
@@ -122,11 +119,11 @@ export class Animation extends Node
             source.assets=[];
         }
 
-        this.accelerator=accelerator;
-        this.layers=this.mapProp(AnimationPropMap.layers,s=>createLayer(this,s))||[];
-        this.markers=this.mapProp(AnimationPropMap.markers,s=>new Marker(s));
-        this.assets=this.mapProp(AnimationPropMap.assets,s=>new Asset(s))||[];
-        this.meta=this.mapProp(AnimationPropMap.meta,s=>new Meta(s))?.[0];
+        this.acc=new FallbackAccelerator(this,()=>this.swapSource(),accelerator);
+        this.layers=this.mapProp(CompositionPropMap.layers,s=>createLayer(this,s))||[];
+        this.markers=this.mapProp(CompositionPropMap.markers,s=>new Marker(s));
+        this.assets=this.mapProp(CompositionPropMap.assets,s=>new Asset(s))||[];
+        this.meta=this.mapProp(CompositionPropMap.meta,s=>new Meta(s))?.[0];
 
         this.updateLayerLookup();
         this.updateAssetLookup();
@@ -139,16 +136,16 @@ export class Animation extends Node
     }
 
     /**
-     * Creates a deep clone of the animation
+     * Creates a deep clone of the composition
      */
-    public clone():Animation
+    public clone():Composition
     {
-        return new Animation(this.getSource(),this.accelerator,true);
+        return new Composition(this.getSource(),this.acc,true);
     }
 
     /**
-     * Returns an optimized lottie file from the current state of the animation. All hidden
-     * layers of the exported animation and all unused assets are removed.
+     * Returns an optimized lottie file from the current state of the composition. All hidden
+     * layers and unused assets are removed from the exported composition.
      */
     public export():AnimationObject
     {
@@ -181,17 +178,17 @@ export class Animation extends Node
     }
 
     /**
-     * Returns the top most layer at the given point. Hit testing is performed based on pixel opacity
+     * Returns the visual top most layer at the given point. Hit testing is performed based on pixel opacity
      * @param x X position
      * @param y Y position
      * @param radius The outwards radius from x and y to hit test
      */
-    public async getLayerAtPtAsync(x:number,y:number,radius:number=8):Promise<Layer|null>
+    public async hitTestLayerAtPtAsync(x:number,y:number,radius:number=8):Promise<Layer|null>
     {
-        if(!this.accelerator || !this.layers){
+        if(!this.acc || !this.layers){
             return null;
         }
-        const index=await this.accelerator.getLayerIndexAtPtAsync(x,y,radius);
+        const index=await this.acc.hitTestLayerAtPtAsync(x,y,radius);
         if(index<0 || index>=this.layers.length){
             return null;
         }
@@ -200,7 +197,32 @@ export class Animation extends Node
     }
 
     /**
-     * Adds a layer to the animation.
+     * Returns the top most layer with a center point that falls within the given point radius. Use
+     * hitTestLayerAtPtAsync visually find a layer at a given point. 
+     * @param x X position
+     * @param y Y position
+     * @param radius The outwards radius from x and y
+     */
+    public getLayerAtPt(x:number,y:number,radius:number=8){
+        for(const layer of this.layers)
+        {
+            if(layer.isHidden || layer.transform?.o?.k===0){
+                continue;
+            }
+            const center=layer.getPosition();
+
+            const a=x-center.x;
+            const b=y-center.y;
+
+            if(Math.sqrt(a*a+b*b)<=radius){
+                return layer;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Adds a layer to the composition.
      * @param layerSource A layer source object. layerSource should use the same format as layers
      *                    exported by the bodymovin plugin. This object will be mutated by changes
      *                    to the returned Layer object.
@@ -231,12 +253,12 @@ export class Animation extends Node
     }
 
     /**
-     * Removes the given layer from the animation. 
+     * Removes the given layer from the composition. 
      * @param layer The layer to remove
      * @param removeUnusedAssets If true any assets that are exclusively used by the given
      *                           layer will be removed.
      * @returns Returns true if the layer was removed. If the given layer is not part of the
-     *          animation false is returned.
+     *          composition false is returned.
      */
     public removeLayer(layer:Layer, removeUnusedAssets:boolean=true, triggerSourceChange=true):boolean
     {
@@ -282,7 +304,7 @@ export class Animation extends Node
     }
 
     /**
-     * Adds a new text layer to the animation
+     * Adds a new text layer to the composition
      * @param name Name of the layer to be added
      * @param text Text or text and format option for the text to add
      * @param transform Transform options to apply to the layer
@@ -330,9 +352,9 @@ export class Animation extends Node
     }
 
     /**
-     * Imports a lottie file into this animation as a precomposition layer. The lottie file will
+     * Imports a lottie file into this composition as a precomposition layer. The lottie file will
      * be converted to an asset and a precomposition layer will be created that references the newly
-     * created asset. Assets of the lottie file will be merged with the assets of this animation
+     * created asset. Assets of the lottie file will be merged with the assets of this composition
      * and any duplicate assets will be merged.
      * @param name The name the layer will be given
      * @param animation A lottie file. This object will be deeply cloned and not be mutated
@@ -490,7 +512,7 @@ export class Animation extends Node
     }
 
     /**
-     * Adds a new asset to the animation
+     * Adds a new asset to the composition
      */
     public addAsset(assetSource:SourceObject, triggerSourceChange=true)
     {
@@ -652,11 +674,11 @@ export class Animation extends Node
     }
 
     /**
-     * Adds the assets of the given animation to this animation and remaps
+     * Adds the assets of the given animation to this composition and remaps
      * asset ids. Duplicate assets will be merged.
      * @param animation 
      */
-    private addAssets(animation:SourceObject, triggerSourceChange=true)
+    private addAssets(animation:AnimationObject, triggerSourceChange=true)
     {
         const assets=animation.assets;
         if(!assets?.length){

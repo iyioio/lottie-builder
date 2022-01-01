@@ -255,9 +255,6 @@ export default function App() {
     return (
         <View style={styles.flex1}>
             <KeepAwake/>
-            {textLayer&&<View style={[styles.row,{marginTop:60}]}>
-                <TextInput style={styles.textInput} value={textLayer.text} onChangeText={s=>textLayer.text=s} />
-            </View>}
             <View style={[
                 styles.flex1,
                 aspectRatio!=='fill'&&styles.center,
@@ -329,6 +326,9 @@ export default function App() {
                 <Button title="load" onPress={loadAnimation}/>
                 <Button title="reset" onPress={loadTestLottie}/>
             </View>
+            {textLayer&&<View style={styles.textInputRow}>
+                <TextInput style={styles.textInput} value={textLayer.text} onChangeText={s=>textLayer.text=s} />
+            </View>}
         </View>
     );
 }
@@ -363,11 +363,20 @@ const styles = StyleSheet.create({
         width:100,
         height:200,
     },
+    textInputRow:{
+        position:'absolute',
+        left:0,
+        top:50,
+        width:'100%',
+        flexDirection:'row',
+        paddingHorizontal:20
+    },
     textInput:{
         flex:1,
         borderColor:'#ddd',
+        backgroundColor:'#fff',
         borderWidth:1,
         padding:10,
         borderRadius:4
-    }
+    },
 });

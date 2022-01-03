@@ -1,7 +1,6 @@
-import { BlendMode, LayerType } from "@lottiefiles/lottie-js";
 import { Accelerator, FallbackAccelerator } from "./Accelerator";
 import { Asset } from "./Asset";
-import { createRevPropMap, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
+import { BlendMode, createRevPropMap, LayerType, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
 import { createEvent, EventSource, EventSourceT } from './Event';
 import { createLayer, Layer, LayerPropMap, PrecompositionLayer, TextLayer, TextLayerPropMap } from "./Layer";
 import { Marker } from "./Marker";

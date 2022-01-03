@@ -26,6 +26,46 @@ export interface AnimationObject {
     layers:SourceObject[];
 }
 
+export interface AnimationObjectOptions
+{
+    version?:string;
+    frameRate?:number;
+    inPoint?:number;
+    frameCount:number;
+    width:number;
+    height:number;
+    name:string;
+    is3D?:boolean;
+    assets?:SourceObject[];
+    layers?:SourceObject[];
+}
+
+export function createAnimationObject({
+    version='5.7.3',
+    frameRate=30,
+    inPoint=0,
+    frameCount,
+    width,
+    height,
+    name,
+    is3D=false,
+    assets=[],
+    layers=[],
+}:AnimationObjectOptions):AnimationObject{
+    return {
+        v: version,
+        fr: frameRate,
+        ip: inPoint,
+        op: frameCount,
+        w: width,
+        h: height,
+        nm: name,
+        ddd:is3D?1:0,
+        assets,
+        layers,
+    }
+}
+
 export const CompositionPropMap={
     frameRate:{name:'fr'},
     height:{name:'h'},
@@ -101,7 +141,7 @@ export class Composition extends Node
     private get sourceAssets():SourceObject[]{return this.source.assets}
 
     public constructor(
-        source:SourceObject,
+        source:AnimationObject,
         accelerator?:Accelerator,
         cloneSource:boolean=true)
     {
@@ -139,7 +179,7 @@ export class Composition extends Node
      */
     public clone():Composition
     {
-        return new Composition(this.getSource(),this.acc,true);
+        return new Composition(this.getAnimationObject(),this.acc,true);
     }
 
     /**

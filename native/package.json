@@ -1,6 +1,6 @@
 {
   "name": "@iyio/lottie-builder-react-native",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Methods for manipulating lottie animations from React-Native",
   "main": "lib/commonjs/index",
   "module": "lib/module/index",
@@ -129,6 +129,6 @@
     ]
   },
   "dependencies": {
-    "@iyio/lottie-builder": "0.0.3"
+    "@iyio/lottie-builder": "^0.0.4"
   }
 }

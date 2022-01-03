@@ -1,4 +1,4 @@
-# @iyio/react-native-lottie-builder
+# @iyio/lottie-builder-react-native
 
 Methods for manipulating lottie animations from React-Native
 
@@ -23,7 +23,7 @@ The example below loads a Lottie animation and allows you to do the following:
 ``` tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Button, findNodeHandle, GestureResponderEvent, StyleSheet, Text, View } from "react-native";
-import { setColor,setPoint, setSize, getCompositionSizeAsync, setFloat, convertToNativeColor, Size, viewportPointToCompPoint, ResizeMode } from "@iyio/react-native-lottie-builder";
+import { setColor,setPoint, setSize, getCompositionSizeAsync, setFloat, convertToNativeColor, Size, viewportPointToCompPoint, ResizeMode } from "@iyio/lottie-builder-react-native";
 import LottieView from "lottie-react-native";
 
 // test-af-lottie.aep exported using the Bodymovin extension

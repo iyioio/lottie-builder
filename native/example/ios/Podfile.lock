@@ -19,7 +19,7 @@ PODS:
     - DoubleConversion
     - glog
   - glog (0.3.5)
-  - iyio-react-native-lottie-builder (0.1.0):
+  - iyio-react-native-lottie-builder (0.0.6):
     - lottie-ios
     - React-Core
   - lottie-ios (3.2.3)
@@ -368,7 +368,7 @@ SPEC CHECKSUMS:
   FBReactNativeSpec: f2c97f2529dd79c083355182cc158c9f98f4bd6e
   Folly: b73c3869541e86821df3c387eb0af5f65addfab4
   glog: 40a13f7840415b9a77023fbcae0f1e6f43192af3
-  iyio-react-native-lottie-builder: c302771de32c4d27807b15e095298084d94e9dcb
+  iyio-react-native-lottie-builder: b1d7957e38805c3269a704c9d4cb4259361cddf2
   lottie-ios: c058aeafa76daa4cf64d773554bccc8385d0150e
   lottie-react-native: a029a86e1689c86a07169c520ae770e84348cd20
   RCTRequired: 082f10cd3f905d6c124597fd1c14f6f2655ff65e

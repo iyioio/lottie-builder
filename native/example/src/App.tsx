@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Animated, Button, GestureResponderEvent, StyleSheet, Text, TextInput, View } from "react-native";
-import { ReactNativeAccelerator } from "@iyio/react-native-lottie-builder";
+import { ReactNativeAccelerator } from "@iyio/lottie-builder-react-native";
 import { Composition, AnimationObject, asTextLayer, joinRemoveListeners, Layer, Point, ResizeMode, Size, viewportPointToCompPoint } from '@iyio/lottie-builder';
 import LottieView from "lottie-react-native";
 import KeepAwake from 'react-native-keep-awake';

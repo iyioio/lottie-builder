@@ -1,6 +1,6 @@
 {
   "name": "@iyio/react-native-lottie-builder-example",
-  "description": "Example app for @iyio/react-native-lottie-builder",
+  "description": "Example app for @iyio/lottie-builder-react-native",
   "version": "0.0.1",
   "private": true,
   "scripts": {

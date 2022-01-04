@@ -115,8 +115,7 @@ export class Composition extends Node
     public get is3D():boolean|undefined{return this.getValue(CompositionPropMap.is3D)}
     public set is3D(value:boolean|undefined){this.setValue(CompositionPropMap.is3D,value)}
 
-    public get outPoint():number|undefined{return this.getValue(CompositionPropMap.outPoint)}
-    public set outPoint(value:number|undefined){this.setValue(CompositionPropMap.outPoint,value)}
+    public get outPoint():number{return this.getValue(CompositionPropMap.outPoint)||0}
 
     public get version():string|undefined{return this.getValue(CompositionPropMap.version)}
     public set version(value:string|undefined){this.setValue(CompositionPropMap.version,value)}
@@ -399,13 +398,16 @@ export class Composition extends Node
      * @param animation A lottie file. This object will be deeply cloned and not be mutated
      * @param transform Transform options to apply to the layer
      * @param index The index which to insert the layer
+     * @param autoLoop If true and the lottie file is shorter than this composition a 
+     *                 precomposition will be create that loops the lottie file
      * @returns A PrecompositionLayer representing the imported lottie file
      */
     public addLottieLayer(
         name:string,
         animation:AnimationObject,
         transform:TransformOptionsWithSize={},
-        index?:number): PrecompositionLayer
+        index?:number,
+        autoLoop:boolean=true): PrecompositionLayer
     {
         if(!animation.layers){
             throw new Error('source.layers expected')
@@ -451,9 +453,10 @@ export class Composition extends Node
             [LayerPropMap.autoOrient.name]:0,
             [LayerPropMap.width.name]:transform.width,
             [LayerPropMap.height.name]:transform.height,
-            [LayerPropMap.inPoint.name]:this.isPoint,
-            [LayerPropMap.outPoint.name]:this.outPoint,
+            [LayerPropMap.inPoint.name]:0,
+            [LayerPropMap.outPoint.name]:animation.op||this.outPoint,
             [LayerPropMap.startTime.name]:0,
+            [LayerPropMap.timeStretch.name]:1,
             [LayerPropMap.blendMode.name]:BlendMode.NORMAL,
             [LayerPropMap.transform.name]:createTransform(transform),
         }
@@ -462,11 +465,64 @@ export class Composition extends Node
             this.addAsset(comp,false);
         }
 
+        if(animation.op < this.outPoint && autoLoop){
+            let {asset:looped}=this.createPreCompLoop(layerSource,this.outPoint);
+            const matchedLoop=this.getMatchingAsset(looped,[]);
+
+            if(matchedLoop){
+                looped=matchedLoop;
+            }else{
+                this.addAsset(looped,false);
+            }
+
+            layerSource[LayerPropMap.refId.name]=looped.id;
+            layerSource[LayerPropMap.outPoint.name]=this.outPoint;
+        }
+
         const layer=this.addLayer(layerSource,index,false) as PrecompositionLayer;
 
         this.swapSource();
 
         return layer;
+    }
+
+    private createPreCompLoop(precomp:SourceObject,newLength:number):{
+        asset:SourceObject,
+        length:number
+    }
+    {
+        const loop={
+            id:'loop_'+newId(),
+            layers:([] as SourceObject[])
+        }
+
+        const compLength=Number(precomp[LayerPropMap.outPoint.name])-Number(precomp[LayerPropMap.inPoint.name]);
+        let length=0;
+        let i=1;
+        while(length<newLength){
+            const layer=cloneObj(precomp);
+            layer[LayerPropMap.type.name]=LayerType.PRECOMPOSITION;
+            layer[LayerPropMap.name.name]='Step'+i;
+            layer[LayerPropMap.index.name]=i;
+            layer[LayerPropMap.blendMode.name]=BlendMode.NORMAL;
+            layer[LayerPropMap.startTime.name]=length;
+            layer[LayerPropMap.inPoint.name]=length;
+            layer[LayerPropMap.outPoint.name]=length+compLength;
+            layer[LayerPropMap.transform.name]=createTransform({
+                x:Number(precomp[LayerPropMap.width.name])/2,
+                y:Number(precomp[LayerPropMap.width.name])/2,
+                anchorX:Number(precomp[LayerPropMap.width.name])/2,
+                anchorY:Number(precomp[LayerPropMap.width.name])/2,
+            });
+            loop.layers.push(layer);
+            length+=compLength;
+            i++;
+        }
+
+        return {
+            asset:loop,
+            length
+        }
     }
 
     /**

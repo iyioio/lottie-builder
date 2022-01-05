@@ -1,3 +1,5 @@
+import { TransformOptions } from "./Transform";
+
 export enum ObjectType {
     Animation = 0,
     Layer = 1,
@@ -61,6 +63,45 @@ export type Point={x:number,y:number}
 export type Point3D={x:number,y:number,z:number}
 
 export type ResizeMode = "cover" | "contain" | "center";
+
+export interface CreatePrecompositionOptions
+{
+    /**
+     * The index which to insert the layer
+     */
+    index?:number;
+
+    /**
+     * If true and the lottie file is shorter than this composition a precomposition will be 
+     * create that loops the lottie file. Is true by default.
+     */
+    autoLoop?:boolean;
+
+    /**
+     * If true the precomposition will have it's anchor point centered. Is true by default
+     */
+    centerAnchorPoint?:boolean;
+
+    /**
+     * If defined the precomposition will be scale relative to the scale of it's containing composition
+     */
+    scale?:number;
+
+    /**
+     * A width value that will override the width of the imported lottie file
+     */
+    width?:number;
+
+    /**
+     * A height value that will override the height of the imported lottie file
+     */
+    height?:number;
+
+    /**
+     * Transform options to apply to the layer
+     */
+    transform?:TransformOptions;
+}
 
 export interface PropertyInfo
 {

@@ -1,13 +1,13 @@
 import { Accelerator, FallbackAccelerator } from "./Accelerator";
 import { Asset } from "./Asset";
-import { BlendMode, createRevPropMap, LayerType, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
+import { BlendMode, CreatePrecompositionOptions, createRevPropMap, LayerType, newId, ObjectChangeListener, ObjectType, SourceObject } from "./common";
 import { createEvent, EventSource, EventSourceT } from './Event';
 import { createLayer, Layer, LayerPropMap, PrecompositionLayer, TextLayer, TextLayerPropMap } from "./Layer";
 import { Marker } from "./Marker";
 import { Meta } from "./Meta";
 import { Node } from './Node';
 import { createTextDataFrom, TextDataOptions } from "./Text";
-import { createTransform, TransformOptions, TransformOptionsWithSize } from "./Transform";
+import { createTransform, TransformOptions } from "./Transform";
 import { aryRemoveItem, cloneObj, deepCompare, KeyComparer } from "./util";
 
 /**
@@ -396,18 +396,22 @@ export class Composition extends Node
      * and any duplicate assets will be merged.
      * @param name The name the layer will be given
      * @param animation A lottie file. This object will be deeply cloned and not be mutated
-     * @param transform Transform options to apply to the layer
-     * @param index The index which to insert the layer
-     * @param autoLoop If true and the lottie file is shorter than this composition a 
-     *                 precomposition will be create that loops the lottie file
+     * @param options Additional creation options
      * @returns A PrecompositionLayer representing the imported lottie file
      */
     public addLottieLayer(
         name:string,
         animation:AnimationObject,
-        transform:TransformOptionsWithSize={},
-        index?:number,
-        autoLoop:boolean=true): PrecompositionLayer
+        {
+            index,
+            autoLoop=true,
+            centerAnchorPoint=true,
+            scale,
+            width,
+            height,
+            transform={}
+        }:CreatePrecompositionOptions={},
+        ): PrecompositionLayer
     {
         if(!animation.layers){
             throw new Error('source.layers expected')
@@ -422,11 +426,11 @@ export class Composition extends Node
         if(transform.y===undefined){
             transform.y=(this.height||0)/2
         }
-        if(transform.width===undefined){
-            transform.width=animation.w||100;
+        if(width===undefined){
+            width=animation.w||100;
         }
-        if(transform.height===undefined){
-            transform.height=animation.h||100;
+        if(height===undefined){
+            height=animation.h||100;
         }
 
         this.addAssets(animation,false);
@@ -451,14 +455,19 @@ export class Composition extends Node
             [LayerPropMap.refId.name]:comp.id,
             [LayerPropMap.startTime.name]:1,
             [LayerPropMap.autoOrient.name]:0,
-            [LayerPropMap.width.name]:transform.width,
-            [LayerPropMap.height.name]:transform.height,
+            [LayerPropMap.width.name]:width,
+            [LayerPropMap.height.name]:height,
             [LayerPropMap.inPoint.name]:0,
             [LayerPropMap.outPoint.name]:animation.op||this.outPoint,
             [LayerPropMap.startTime.name]:0,
             [LayerPropMap.timeStretch.name]:1,
             [LayerPropMap.blendMode.name]:BlendMode.NORMAL,
-            [LayerPropMap.transform.name]:createTransform(transform),
+            [LayerPropMap.transform.name]:createTransform({
+                anchorX:centerAnchorPoint?width/2:undefined,
+                anchorY:centerAnchorPoint?height/2:undefined,
+                scale:scale===undefined?undefined:this.width/width*scale,
+                ...transform
+            }),
         }
 
         if(!matchingComp){

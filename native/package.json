@@ -129,6 +129,6 @@
     ]
   },
   "dependencies": {
-    "@iyio/lottie-builder": "^0.0.4"
+    "@iyio/lottie-builder": "^0.1.0"
   }
 }

@@ -410,9 +410,9 @@ export class Composition extends Node
             width,
             height,
             transform={}
-        }:CreatePrecompositionOptions={},
-        ): PrecompositionLayer
-    {
+        }:CreatePrecompositionOptions={}
+    ):PrecompositionLayer{
+
         if(!animation.layers){
             throw new Error('source.layers expected')
         }

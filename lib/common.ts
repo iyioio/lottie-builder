@@ -213,7 +213,7 @@ export function newId(): string {
 }
 
 /**
- * Converts a hex string to a lottie color array of floating point numbers
+ * Converts a hex string to a lottie RGBA color array of floating point numbers
  * @param color A hex string
  */
 export function convertToLottieColor(color:string):[number,number,number,number]
@@ -268,4 +268,15 @@ export function convertToLottieColor(color:string):[number,number,number,number]
         Number('0x'+color.substr(4,2))/255,
         Number('0x'+color.substr(6,2))/255,
     ];
+}
+
+/**
+ * Converts a hex string to a lottie RGB color array of floating point numbers
+ * @param color A hex string
+ */
+export function convertToLottieColorRGB(color:string):[number,number,number]
+{
+    const ary=convertToLottieColor(color);
+    ary.pop();
+    return ary as any;
 }

@@ -147,6 +147,10 @@ export class Layer extends Node{
         this.comp.acc?.setLayerHidden(this.getSourceIndex(),value);
     }
 
+    public get isAttached():boolean{
+        return this.getSourceIndex()!==-1;
+    }
+
     public constructor(
         an:Composition,
         source:SourceObject,

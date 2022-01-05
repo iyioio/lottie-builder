@@ -37,10 +37,7 @@ export interface EventSourceT<TListener>
     trigger:TListener;
 }
 
-export interface EventSource extends EventSourceT<()=>void>
-{
-    
-}
+export type EventSource = EventSourceT<()=>void>;
 
 
 export function createEvent<TListener>():EventSourceT<TListener>

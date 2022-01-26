@@ -8,6 +8,10 @@ import SwiftUI
 class ReactNativeLottieBuilder: NSObject {
 
     @objc var bridge: RCTBridge!
+    
+    @objc static func requiresMainQueueSetup() -> Bool {
+        return false
+    }
 
     @objc(setColor:withKeypath:red:green:blue:andAlpha:)
     func setColor(_ tag:NSNumber, keypath: String, r:CGFloat, g:CGFloat, b:CGFloat, a:CGFloat)->Void
